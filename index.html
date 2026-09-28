@@ -36,7 +36,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (xlsx) for parsing Excel files -->
+    <!-- SheetJS (xlsx) for Excel / Google Sheets exporting -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,8 +66,8 @@
                         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAA5CAMAAAA5l7nEAAAAA1BMVEUAAACnej3aAAAASElEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4G827AABXUe2jgAAAABJRU5ErkJggg==" alt="Carabineros de Chile" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://placehold.co/180x50/004225/C5A059?text=CARABINEROS'">
                     </div>
                     <div>
-                        <h1 class="text-base sm:text-lg font-bold text-[#004225] leading-tight tracking-tight">Mesa de Ayuda y Soporte</h1>
-                        <p class="text-[11px] text-[#15803d] font-semibold uppercase tracking-wider">Sistemas Comunitarios • Carabineros de Chile</p>
+                        <h1 class="text-xs sm:text-sm font-bold text-[#004225] uppercase tracking-wide text-center">DEPTO. PLAN CUADRANTE E INTEGRACION COMUNITARIA</h1>
+                        <p class="text-[11px] text-[#15803d] font-semibold text-center mt-0.5">Mesa de Ayuda y Soporte Sistemas Comunitarios</p>
                     </div>
                 </div>
                 
@@ -191,22 +191,22 @@
             <!-- Filter Toolbar -->
             <div class="p-5 border-b border-slate-200 space-y-4">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 flex-wrap gap-2">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">Registro General de Atenciones</h2>
                             <p class="text-xs text-slate-500">Gestiona, filtra y realiza seguimiento a las solicitudes recibidas</p>
                         </div>
                         <label class="inline-flex items-center px-3 py-1.5 border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 cursor-pointer transition-colors">
                             <i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i>
-                            <span id="excelStatusLabel">Cargar Excel Unidades</span>
+                            <span id="excelStatusLabel">Cargar Códigos (Excel)</span>
                             <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
                         </label>
                     </div>
 
                     <div class="flex items-center space-x-2">
-                        <button onclick="exportToCSV()" class="inline-flex items-center px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004225] transition-colors">
-                            <i class="fa-solid fa-file-csv text-emerald-600 text-sm mr-2"></i>
-                            Exportar CSV
+                        <button onclick="exportToSheet()" class="inline-flex items-center px-4 py-2 border border-emerald-600 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all shadow-sm">
+                            <i class="fa-solid fa-file-excel text-emerald-200 text-sm mr-2"></i>
+                            Exportar en Sheet (.xlsx)
                         </button>
                         <button onclick="resetFilters()" class="inline-flex items-center px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
                             <i class="fa-solid fa-rotate-left mr-1.5"></i>
@@ -665,11 +665,9 @@
                     const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                     let newUnits = [];
-                    // Iterate rows, extracting Column B (index 1) as Code and Column C or text as Name
                     json.forEach((row, idx) => {
                         if (row && row.length >= 2) {
                             let codeVal = String(row[1] || '').trim(); // Column B
-                            // Find name in column C (index 2) or other text columns
                             let nameVal = '';
                             for (let c = 2; c < row.length; c++) {
                                 if (row[c] && String(row[c]).trim().length > 0) {
@@ -687,8 +685,8 @@
 
                     if (newUnits.length > 0) {
                         officialUnits = newUnits;
-                        document.getElementById('excelStatusLabel').textContent = `Excel Cargado (${newUnits.length} unidades)`;
-                        showToast(`Se cargaron ${newUnits.length} unidades correctamente desde el Excel (Columna B como Código)`, 'success');
+                        document.getElementById('excelStatusLabel').textContent = `Excel Cargado (${newUnits.length} un.)`;
+                        showToast(`Se cargaron ${newUnits.length} unidades correctamente desde el Excel`, 'success');
                     } else {
                         showToast('No se pudieron extraer datos válidos de la Columna B del Excel', 'warning');
                     }
@@ -1160,7 +1158,6 @@
                 return;
             }
 
-            // Extract unit code and name if format is "CODE - NAME" or match from official list
             let unitCode = '';
             let unitName = rawUnitInput;
 
@@ -1174,7 +1171,7 @@
                     unitCode = found.code;
                     unitName = found.name;
                 } else {
-                    unitCode = '2000'; // Default custom code
+                    unitCode = '2000';
                 }
             }
 
@@ -1277,47 +1274,46 @@
             openModal('deleteModal');
         }
 
-        function exportToCSV() {
+        function exportToSheet() {
             if (filteredTickets.length === 0) {
-                showToast('No hay datos para exportar', 'warning');
+                showToast('No hay datos para exportar en Sheet', 'warning');
                 return;
             }
 
-            const headers = ['ID', 'Cod. Funcionario', 'Fecha', 'Vía Contacto', 'Cod. Unidad', 'Unidad / Dependencia', 'Usuario Solicitante', 'Cargo', 'Contacto', 'Tipo Requerimiento', 'Prioridad', 'Estado', 'Descripción', 'Solución'];
-            
-            const csvRows = [headers.join(',')];
+            // Format data rows for Excel / Google Sheets
+            const sheetData = filteredTickets.map(t => ({
+                "ID Atención": t.id,
+                "Código Funcionario": t.funcCode || '',
+                "Fecha Registro": t.date,
+                "Vía de Contacto": t.channel,
+                "Código Unidad": t.unitCode || '',
+                "Unidad / Dependencia": t.unit,
+                "Solicitante": t.userName,
+                "Cargo": t.userRole || '',
+                "Datos de Contacto": t.contact,
+                "Tipo Requerimiento": t.type,
+                "Prioridad": t.priority,
+                "Estado": t.status,
+                "Descripción del Problema": t.description,
+                "Solución / Observaciones": t.solution || ''
+            }));
 
-            filteredTickets.forEach(t => {
-                const row = [
-                    `"${t.id}"`,
-                    `"${t.funcCode || ''}"`,
-                    `"${t.date}"`,
-                    `"${t.channel}"`,
-                    `"${t.unitCode || ''}"`,
-                    `"${t.unit.replace(/"/g, '""')}"`,
-                    `"${t.userName.replace(/"/g, '""')}"`,
-                    `"${(t.userRole || '').replace(/"/g, '""')}"`,
-                    `"${t.contact.replace(/"/g, '""')}"`,
-                    `"${t.type}"`,
-                    `"${t.priority}"`,
-                    `"${t.status}"`,
-                    `"${t.description.replace(/"/g, '""')}"`,
-                    `"${(t.solution || '').replace(/"/g, '""')}"`
-                ];
-                csvRows.push(row.join(','));
-            });
+            // Create Worksheet and Workbook using SheetJS
+            const worksheet = XLSX.utils.json_to_sheet(sheetData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Mesa de Ayuda");
 
-            const csvContent = "\uFEFF" + csvRows.join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', `Registro_Mesa_Ayuda_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Auto-fit column widths for better visual presentation in Sheet
+            const colWidths = Object.keys(sheetData[0]).map(key => ({
+                wch: Math.max(key.length, ...sheetData.map(row => String(row[key] || '').length)) + 3
+            }));
+            worksheet['!cols'] = colWidths;
 
-            showToast('Archivo CSV exportado exitosamente', 'success');
+            // Trigger file download (.xlsx format compatible with Google Sheets & Microsoft Excel)
+            const fileName = `Mesa_Ayuda_Sistemas_Comunitarios_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+
+            showToast('Archivo Sheet (.xlsx) exportado con éxito. Listo para guardar en la nube.', 'success');
         }
 
         function openModal(modalId) {
