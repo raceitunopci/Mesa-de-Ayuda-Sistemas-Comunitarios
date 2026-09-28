@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesa de Ayuda - Soporte Sistemas Comunitarios</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#16a34a',
+                            600: '#15803d',
+                            700: '#166534',
+                            800: '#14532d',
+                            900: '#052e16',
+                        },
+                        carabineros: {
+                            green: '#004225',
+                            gold: '#C5A059'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (xlsx) for parsing Excel files -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Animations and styles -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-header { backdrop-filter: blur(8px); background-color: rgba(255, 255, 255, 0.95); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .toast-enter { transform: translateY(-20px); opacity: 0; }
+        .toast-show { transform: translateY(0); opacity: 1; transition: all 0.3s ease-out; }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 glass-header border-b border-emerald-900/20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Left: Carabineros Logo & Title -->
+                <div class="flex items-center space-x-3.5">
+                    <div class="bg-white p-1 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center flex-shrink-0">
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAA5CAMAAAA5l7nEAAAAA1BMVEUAAACnej3aAAAASElEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4G827AABXUe2jgAAAABJRU5ErkJggg==" alt="Carabineros de Chile" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://placehold.co/180x50/004225/C5A059?text=CARABINEROS'">
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold text-[#004225] leading-tight tracking-tight">Mesa de Ayuda y Soporte</h1>
+                        <p class="text-[11px] text-[#15803d] font-semibold uppercase tracking-wider">Sistemas Comunitarios • Carabineros de Chile</p>
+                    </div>
+                </div>
+                
+                <!-- Center: Larger Clock and Date -->
+                <div id="liveClock" class="hidden md:flex items-center text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 shadow-xs">
+                    <i class="fa-regular fa-clock mr-2 text-[#004225] text-base"></i>
+                    <span id="clockText">--/--/---- --:--:--</span>
+                </div>
+
+                <!-- Right: Action Button -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="openModal('ticketModal')" class="inline-flex items-center justify-center px-4 py-2.5 bg-[#004225] hover:bg-[#14532d] active:bg-[#052e16] text-white text-sm font-medium rounded-xl shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004225] transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-plus mr-2 text-xs"></i>
+                        <span>Nueva Atención</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- KPI Cards Summary Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Atenciones</p>
+                        <h3 id="statTotal" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                        <p class="text-xs text-emerald-600 font-medium mt-1 flex items-center">
+                            <i class="fa-solid fa-arrow-trend-up mr-1"></i> Registradas en el sistema
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-[#004225] rounded-xl flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-[#004225]"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Pendientes / En Proceso</p>
+                        <h3 id="statPending" class="text-3xl font-extrabold text-amber-600 mt-1">0</h3>
+                        <p class="text-xs text-amber-600 font-medium mt-1 flex items-center">
+                            <i class="fa-solid fa-clock-rotate-left mr-1"></i> Requieren seguimiento
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Resueltas</p>
+                        <h3 id="statResolved" class="text-3xl font-extrabold text-emerald-600 mt-1">0</h3>
+                        <p id="statResolvedPct" class="text-xs text-emerald-600 font-medium mt-1 flex items-center">
+                            <i class="fa-solid fa-circle-check mr-1"></i> 0% Tasa de solución
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-square-check"></i>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Canal Principal</p>
+                        <h3 id="statTopChannel" class="text-xl font-bold text-slate-800 mt-2 truncate max-w-[150px]">-</h3>
+                        <p class="text-xs text-slate-500 font-medium mt-1 flex items-center">
+                            <i class="fa-solid fa-share-nodes mr-1 text-slate-400"></i> Mayor volumen
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500"></div>
+            </div>
+        </section>
+
+        <!-- Charts Analytics Dashboard -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-chart-pie text-[#004225] mr-2"></i>
+                        Distribución por Vía de Contacto
+                    </h2>
+                    <span class="text-xs text-slate-400">Canales de entrada</span>
+                </div>
+                <div class="relative h-64 w-full flex items-center justify-center">
+                    <canvas id="channelChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-chart-bar text-[#004225] mr-2"></i>
+                        Requerimientos por Categoria
+                    </h2>
+                    <span class="text-xs text-slate-400">Tipos de problemas</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Data Management Section -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <!-- Filter Toolbar -->
+            <div class="p-5 border-b border-slate-200 space-y-4">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Registro General de Atenciones</h2>
+                            <p class="text-xs text-slate-500">Gestiona, filtra y realiza seguimiento a las solicitudes recibidas</p>
+                        </div>
+                        <label class="inline-flex items-center px-3 py-1.5 border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 cursor-pointer transition-colors">
+                            <i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i>
+                            <span id="excelStatusLabel">Cargar Excel Unidades</span>
+                            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
+                        </label>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportToCSV()" class="inline-flex items-center px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004225] transition-colors">
+                            <i class="fa-solid fa-file-csv text-emerald-600 text-sm mr-2"></i>
+                            Exportar CSV
+                        </button>
+                        <button onclick="resetFilters()" class="inline-flex items-center px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
+                            <i class="fa-solid fa-rotate-left mr-1.5"></i>
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Multi-Filter Control Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+                    <div class="relative sm:col-span-2 lg:col-span-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </div>
+                        <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Buscar usuario, código, unidad..." class="block w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004225] focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <select id="filterChannel" onchange="applyFilters()" class="block w-full py-2 px-3 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004225]">
+                            <option value="">Todas las Vías de Contacto</option>
+                            <option value="Correo Electrónico Institucional">Correo Electrónico Institucional</option>
+                            <option value="Correo Electrónico Personal">Correo Electrónico Personal</option>
+                            <option value="Teléfono IP">Teléfono IP</option>
+                            <option value="Celular / WhatsApp">Celular / WhatsApp</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="DOE">DOE</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select id="filterStatus" onchange="applyFilters()" class="block w-full py-2 px-3 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004225]">
+                            <option value="">Todos los Estados</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Resuelto">Resuelto</option>
+                            <option value="Derivado">Derivado</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select id="filterType" onchange="applyFilters()" class="block w-full py-2 px-3 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004225]">
+                            <option value="">Todos los Tipos</option>
+                            <option value="Cambio de usuario">Cambio de usuario</option>
+                            <option value="Cambio de fecha de reunión">Cambio de fecha de reunión</option>
+                            <option value="Caducado por Plazo">Caducado por Plazo</option>
+                            <option value="Validacion">Validacion</option>
+                            <option value="Confirmacion">Confirmacion</option>
+                            <option value="Ayuda Remoto">Ayuda Remoto</option>
+                            <option value="Eliminar Problema">Eliminar Problema</option>
+                            <option value="Cambiar Asunto">Cambiar Asunto</option>
+                            <option value="Restablecimiento de contraseña">Restablecimiento de contraseña</option>
+                            <option value="Modificación de registros">Modificación de registros</option>
+                            <option value="Error de sistema">Error de sistema</option>
+                            <option value="Consulta">Consulta / Información</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select id="filterPriority" onchange="applyFilters()" class="block w-full py-2 px-3 border border-slate-300 rounded-xl text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004225]">
+                            <option value="">Todas las Prioridades</option>
+                            <option value="Baja">Baja</option>
+                            <option value="Media">Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Data Table Container -->
+            <div class="overflow-x-auto custom-scrollbar min-h-[350px]">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-100 text-slate-700 uppercase font-semibold tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:bg-slate-200 transition-colors" onclick="sortTable('id')">
+                                ID <i class="fa-solid fa-sort ml-1 text-slate-400"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4 cursor-pointer hover:bg-slate-200 transition-colors" onclick="sortTable('date')">
+                                Fecha <i class="fa-solid fa-sort ml-1 text-slate-400"></i>
+                            </th>
+                            <th scope="col" class="py-3.5 px-4">Cod. Funcionario & Solicitante</th>
+                            <th scope="col" class="py-3.5 px-4">Cod. Unidad & Dependencia</th>
+                            <th scope="col" class="py-3.5 px-4">Vía Contacto</th>
+                            <th scope="col" class="py-3.5 px-4">Tipo de Requerimiento</th>
+                            <th scope="col" class="py-3.5 px-4">Prioridad</th>
+                            <th scope="col" class="py-3.5 px-4">Estado</th>
+                            <th scope="col" class="py-3.5 px-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200 bg-white font-normal">
+                        <!-- Dynamic JS content rows -->
+                    </tbody>
+                </table>
+                <div id="emptyState" class="hidden py-12 text-center text-slate-500">
+                    <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-3"></i>
+                    <p class="font-medium">No se encontraron registros que coincidan con los criterios.</p>
+                </div>
+            </div>
+
+            <!-- Table Footer Pagination Bar -->
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-600 gap-3">
+                <div>
+                    Mostrando <span id="showingCount" class="font-semibold text-slate-900">0</span> de <span id="totalCount" class="font-semibold text-slate-900">0</span> atenciones registradas
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="prevPageBtn" onclick="changePage(-1)" class="px-3 py-1.5 border border-slate-300 rounded-lg bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> Anterior
+                    </button>
+                    <span id="pageIndicator" class="font-semibold px-2">Página 1</span>
+                    <button id="nextPageBtn" onclick="changePage(1)" class="px-3 py-1.5 border border-slate-300 rounded-lg bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Siguiente <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: Create / Edit Event Ticket Modal -->
+    <div id="ticketModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-8 transform transition-all">
+            <div class="bg-[#004225] text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-[#C5A059]"></i>
+                    <h3 id="modalTitle" class="text-base font-bold">Registrar Nueva Atención</h3>
+                </div>
+                <button onclick="closeModal('ticketModal')" class="text-slate-300 hover:text-white transition-colors text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="ticketForm" onsubmit="saveTicket(event)" class="p-6 space-y-4">
+                <input type="hidden" id="ticketId" value="">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Código Funcionario <span class="text-red-500">*</span></label>
+                        <input type="text" id="formFuncCode" required placeholder="Ej: 14253, FN-9821" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Vía de Contacto <span class="text-red-500">*</span></label>
+                        <select id="formChannel" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none bg-white">
+                            <option value="">Seleccione canal...</option>
+                            <option value="Correo Electrónico Institucional">Correo Electrónico Institucional</option>
+                            <option value="Correo Electrónico Personal">Correo Electrónico Personal</option>
+                            <option value="Teléfono IP">Teléfono IP</option>
+                            <option value="Celular / WhatsApp">Celular / WhatsApp</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="DOE">DOE</option>
+                        </select>
+                    </div>
+
+                    <!-- Unidad / Dependencia (Con Autocompletado y Código Oficial) -->
+                    <div class="sm:col-span-2 relative">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Unidad / Dependencia (Incluye Código Oficial) <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="text" id="formUnitInput" required autocomplete="off" placeholder="Escriba para buscar por nombre o código..." oninput="filterUnitList()" onfocus="showUnitDropdown()" class="w-full px-3 py-2 pl-9 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none bg-white">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-building text-xs"></i>
+                            </div>
+                        </div>
+                        <div id="unitDropdownList" class="absolute z-40 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre Solicitante <span class="text-slate-400 font-normal">(Opcional)</span></label>
+                        <input type="text" id="formUserName" placeholder="Nombre completo (Opcional)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Cargo / Puesto</label>
+                        <input type="text" id="formUserRole" placeholder="Ej: Jefe de Sección, Analista" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Datos de Contacto <span class="text-slate-400 font-normal">(Opcional)</span></label>
+                        <input type="text" id="formContact" placeholder="Correo, teléfono o anexo (Opcional)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 pt-3">
+                    <div class="sm:col-span-1">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Requerimiento <span class="text-red-500">*</span></label>
+                        <select id="formType" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none bg-white">
+                            <option value="">Seleccione tipo...</option>
+                            <option value="Cambio de usuario">Cambio de usuario</option>
+                            <option value="Cambio de fecha de reunión">Cambio de fecha de reunión</option>
+                            <option value="Caducado por Plazo">Caducado por Plazo</option>
+                            <option value="Validacion">Validacion</option>
+                            <option value="Confirmacion">Confirmacion</option>
+                            <option value="Ayuda Remoto">Ayuda Remoto</option>
+                            <option value="Eliminar Problema">Eliminar Problema</option>
+                            <option value="Cambiar Asunto">Cambiar Asunto</option>
+                            <option value="Restablecimiento de contraseña">Restablecimiento de contraseña</option>
+                            <option value="Modificación de registros">Modificación de registros</option>
+                            <option value="Error de sistema">Error de sistema</option>
+                            <option value="Consulta">Consulta / Información</option>
+                            <option value="Soporte técnico">Soporte técnico en sitio</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Prioridad <span class="text-red-500">*</span></label>
+                        <select id="formPriority" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none bg-white">
+                            <option value="Baja">Baja</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Estado <span class="text-red-500">*</span></label>
+                        <select id="formStatus" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none bg-white">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Resuelto">Resuelto</option>
+                            <option value="Derivado">Derivado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Descripción del Problema / Solicitud <span class="text-red-500">*</span></label>
+                    <textarea id="formDescription" required rows="3" placeholder="Detalle claramente el problema o solicitud realizada por el usuario..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Solución / Observaciones</label>
+                    <textarea id="formSolution" rows="2" placeholder="Acción realizada, derivación efectuada o notas de resolución..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-[#004225] focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-200">
+                    <button type="button" onclick="closeModal('ticketModal')" class="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-[#004225] hover:bg-[#14532d] text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">
+                        Guardar Atención
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: View Details Modal -->
+    <div id="detailModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-8">
+            <div class="bg-[#004225] text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-shield-halved text-[#C5A059]"></i>
+                    <h3 class="text-base font-bold">Detalle de la Atención <span id="detailId" class="text-emerald-300"></span></h3>
+                </div>
+                <button onclick="closeModal('detailModal')" class="text-slate-300 hover:text-white transition-colors text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 text-xs text-slate-700">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200">
+                    <div>
+                        <span class="text-slate-400">Fecha de Registro:</span>
+                        <span id="detailDate" class="font-semibold text-slate-800 ml-1"></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span id="detailPriorityBadge"></span>
+                        <span id="detailStatusBadge"></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <p class="text-slate-400 font-medium">Código Funcionario:</p>
+                        <p id="detailFuncCode" class="font-bold text-[#004225] text-sm mt-0.5 font-mono"></p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 font-medium">Código y Unidad / Dependencia:</p>
+                        <p id="detailUnit" class="font-bold text-slate-900 text-sm mt-0.5"></p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 font-medium">Vía de Contacto:</p>
+                        <p id="detailChannel" class="font-semibold text-slate-800 mt-0.5"></p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 font-medium">Solicitante:</p>
+                        <p id="detailUser" class="font-semibold text-slate-800 mt-0.5"></p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <p class="text-slate-400 font-medium">Datos de Contacto:</p>
+                        <p id="detailContact" class="font-semibold text-slate-800 mt-0.5"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-slate-500 font-semibold mb-1">Tipo de Requerimiento:</p>
+                    <p id="detailType" class="bg-emerald-50 text-emerald-900 p-2.5 rounded-lg border border-emerald-200 font-medium"></p>
+                </div>
+
+                <div>
+                    <p class="text-slate-500 font-semibold mb-1">Descripción del Problema:</p>
+                    <p id="detailDescription" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+
+                <div>
+                    <p class="text-slate-500 font-semibold mb-1">Solución / Observaciones:</p>
+                    <p id="detailSolution" class="bg-emerald-50 text-emerald-900 p-3 rounded-lg border border-emerald-200 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+
+                <div class="flex justify-end pt-3 border-t border-slate-200">
+                    <button onclick="closeModal('detailModal')" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-semibold transition-colors">
+                        Cerrar Ventana
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">¿Eliminar esta Atención?</h3>
+            <p class="text-xs text-slate-500 mt-1">Esta acción eliminará de forma permanente el registro del sistema.</p>
+            <div class="flex justify-center space-x-3 mt-6">
+                <button onclick="closeModal('deleteModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
+                    Cancelar
+                </button>
+                <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow-sm">
+                    Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Box Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Official complete units list mapped from Excel (Column B as code, Column C or other text as name)
+        let officialUnits = [
+            { code: "1001", name: "10A. COM. LA CISTERNA" },
+            { code: "1002", name: "11A. COM. LO ESPEJO" },
+            { code: "1003", name: "12A. COM. SAN MIGUEL" },
+            { code: "1004", name: "13A. COM. LA GRANJA" },
+            { code: "1005", name: "14A. COM. SAN BERNARDO" },
+            { code: "1006", name: "15A. COM. BUIN" },
+            { code: "1007", name: "16A. COM. LA REINA" },
+            { code: "1008", name: "17A. COM. LAS CONDES" },
+            { code: "1009", name: "18A. COM. ÑUÑOA" },
+            { code: "1010", name: "19A. COM. PROVIDENCIA" },
+            { code: "1101", name: "1RA. COM. ANCUD" },
+            { code: "1102", name: "1RA. COM. ANGOL" },
+            { code: "1103", name: "1RA. COM. ARAUCO" },
+            { code: "1104", name: "1RA. COM. ARICA" },
+            { code: "1105", name: "1RA. COM. CALAMA" },
+            { code: "1106", name: "1RA. COM. CHAÑARAL" },
+            { code: "1107", name: "1RA. COM. CONCEPCION" },
+            { code: "1108", name: "1RA. COM. COYHAIQUE" },
+            { code: "1109", name: "1RA. COM. CURICO" },
+            { code: "1110", name: "1RA. COM. IQUIQUE U" },
+            { code: "1111", name: "1RA. COM. LA LIGUA" },
+            { code: "1112", name: "1RA. COM. LA SERENA" },
+            { code: "1113", name: "1RA. COM. LAUTARO" },
+            { code: "1114", name: "1RA. COM. LINARES" },
+            { code: "1115", name: "1RA. COM. LOS ANGELES" },
+            { code: "1116", name: "1RA. COM. OSORNO" },
+            { code: "1117", name: "1RA. COM. PUERTO VARAS" },
+            { code: "1118", name: "1RA. COM. PUNTA ARENAS" },
+            { code: "1119", name: "1RA. COM. RANCAGUA" },
+            { code: "1120", name: "1RA. COM. SAN ANTONIO" },
+            { code: "1121", name: "1RA. COM. SANTIAGO" },
+            { code: "1122", name: "1RA. COM. TALCA" },
+            { code: "1123", name: "1RA. COM. TEMUCO" },
+            { code: "1124", name: "1RA. COM. VALDIVIA" },
+            { code: "1125", name: "1RA. COM. VALPARAISO" },
+            { code: "1126", name: "1RA. COM. VINA DEL MAR" },
+            { code: "1201", name: "20A. COM. PUENTE ALTO" },
+            { code: "1202", name: "21A. COM. ESTACION CENTRAL" },
+            { code: "1203", name: "22A. COM. QUINTA NORMAL" },
+            { code: "1204", name: "23A. COM. TALAGANTE" },
+            { code: "1205", name: "24A. COM. MELIPILLA" },
+            { code: "1206", name: "25A. COM. MAIPU" },
+            { code: "1207", name: "26A. COM. PUDAHUEL" },
+            { code: "1208", name: "27A. COM. VITACURA" },
+            { code: "1209", name: "28A. COM. GOMEZ CARREÑO" },
+            { code: "1210", name: "29A. COM. LO ESPEJO" },
+            { code: "1211", name: "2DA. COM. ANTOFAGASTA" },
+            { code: "1212", name: "2DA. COM. CHILLAN" },
+            { code: "1213", name: "2DA. COM. COPIAPO" },
+            { code: "1214", name: "2DA. COM. PUERTO MONTT" },
+            { code: "1215", name: "2DA. COM. SANTIAGO" },
+            { code: "1216", name: "2DA. COM. TEMUCO" },
+            { code: "1301", name: "30A. COM. SANTIAGO" },
+            { code: "1302", name: "31A. COM. SAN RAMON" },
+            { code: "1303", name: "32A. COM. SANTIAGO" },
+            { code: "1304", name: "33A. COM. ÑUÑOA" },
+            { code: "1305", name: "34A. COM. LA PINTANA" },
+            { code: "1306", name: "35A. COM. AMERICO VESPUCIO" },
+            { code: "1307", name: "36A. COM. LA FLORIDA" },
+            { code: "1308", name: "37A. COM. VITACURA" },
+            { code: "1309", name: "38A. COM. PUENTE ALTO" },
+            { code: "1310", name: "39A. COM. EL BOSQUE" },
+            { code: "1311", name: "3RA. COM. ANTOFAGASTA" },
+            { code: "1312", name: "3RA. COM. ARICA" },
+            { code: "1313", name: "3RA. COM. CONCEPCION" },
+            { code: "1314", name: "3RA. COM. SANTIAGO" },
+            { code: "1315", name: "3RA. COM. VALPARAISO" },
+            { code: "1401", name: "40A. COM. PAICAVI" },
+            { code: "1402", name: "41A. COM. PEÑALOLEN" },
+            { code: "1403", name: "42A. COM. MACUL" },
+            { code: "1404", name: "43A. COM. CHINCHORRO" },
+            { code: "1405", name: "44A. COM. LO PRADO" },
+            { code: "1406", name: "45A. COM. CERRO NAVIA" },
+            { code: "1407", name: "46A. COM. MACUL" },
+            { code: "1408", name: "47A. COM. LOS DOMINICOS" },
+            { code: "1409", name: "48A. COM. RENE SCHNEIDER" },
+            { code: "1410", name: "49A. COM. QUILICURA" },
+            { code: "1411", name: "4TA. COM. SANTIAGO" },
+            { code: "1412", name: "4TA. COM. VALPARAISO" },
+            { code: "1501", name: "50A. COM. SAN BERNARDO" },
+            { code: "1502", name: "51A. COM. MAIPU" },
+            { code: "1503", name: "52A. COM. MAIPU" },
+            { code: "1504", name: "53A. COM. LO BARNECHEA" },
+            { code: "1505", name: "55A. COM. SANTIAGO" },
+            { code: "1506", name: "56A. COM. PEÑAFLOR" },
+            { code: "1507", name: "57A. COM. LA CISTERNA" },
+            { code: "1508", name: "58A. COM. SECTOR" },
+            { code: "1509", name: "5TA. COM. SANTIAGO" },
+            { code: "1601", name: "60A. COM. PAC" },
+            { code: "1602", name: "6A. COM. RECOLETA" },
+            { code: "1603", name: "6TA. COM. SANTIAGO" },
+            { code: "1701", name: "7MA. COM. SANTIAGO" },
+            { code: "1801", name: "8VA. COM. SANTIAGO" },
+            { code: "1901", name: "9NA. COM. INDEPENDENCIA" },
+            { code: "2001", name: "DEPARTAMENTO DE FINANZAS" },
+            { code: "2002", name: "DEPARTAMENTO DE RECURSOS HUMANOS" },
+            { code: "2003", name: "DIRECCION DE EDUCACION YDOCTRINA (DOE)" },
+            { code: "2004", name: "UNIDAD DE SOPORTE INFORMATICO" },
+            { code: "2005", name: "CENTRAL TELEFONICA MESA DE AYUDA" }
+        ];
+
+        // Function to handle uploading Excel file (`COD-UNI_2.xlsx`) and mapping Column B as Unit Code
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    let newUnits = [];
+                    // Iterate rows, extracting Column B (index 1) as Code and Column C or text as Name
+                    json.forEach((row, idx) => {
+                        if (row && row.length >= 2) {
+                            let codeVal = String(row[1] || '').trim(); // Column B
+                            // Find name in column C (index 2) or other text columns
+                            let nameVal = '';
+                            for (let c = 2; c < row.length; c++) {
+                                if (row[c] && String(row[c]).trim().length > 0) {
+                                    nameVal = String(row[c]).trim();
+                                    break;
+                                }
+                            }
+                            if (!nameVal && row[0]) nameVal = String(row[0]).trim();
+
+                            if (codeVal && nameVal && codeVal.toLowerCase() !== 'codigo' && codeVal.toLowerCase() !== 'código unidad') {
+                                newUnits.push({ code: codeVal, name: nameVal.toUpperCase() });
+                            }
+                        }
+                    });
+
+                    if (newUnits.length > 0) {
+                        officialUnits = newUnits;
+                        document.getElementById('excelStatusLabel').textContent = `Excel Cargado (${newUnits.length} unidades)`;
+                        showToast(`Se cargaron ${newUnits.length} unidades correctamente desde el Excel (Columna B como Código)`, 'success');
+                    } else {
+                        showToast('No se pudieron extraer datos válidos de la Columna B del Excel', 'warning');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error al leer el archivo Excel. Verifique el formato.', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Default Dataset with realistic Chilean institution examples
+        const initialDataset = [
+            {
+                id: "ATN-1001",
+                funcCode: "FN-8421",
+                date: "2026-09-28 08:30",
+                channel: "Correo Electrónico Institucional",
+                unit: "1RA. COM. SANTIAGO",
+                unitCode: "1121",
+                userName: "Cap. Roberto Morales",
+                userRole: "Jefe de Operaciones",
+                contact: "rmorales@institucion.cl / Anexo 102",
+                type: "Cambio de usuario",
+                priority: "Media",
+                status: "Resuelto",
+                description: "Solicita cambio de perfil de usuario en el sistema informático por traslado de puesto de trabajo.",
+                solution: "Se actualizaron los permisos en la base de datos de usuarios y se notificó por correo."
+            },
+            {
+                id: "ATN-1002",
+                funcCode: "FN-3920",
+                date: "2026-09-28 09:15",
+                channel: "Teléfono IP",
+                unit: "DEPARTAMENTO DE FINANZAS",
+                unitCode: "2001",
+                userName: "Dra. Patricia Silva",
+                userRole: "Directora de Sección",
+                contact: "Anexo 4055",
+                type: "Caducado por Plazo",
+                priority: "Alta",
+                status: "En Proceso",
+                description: "Solicita prórroga de expediente que figura como caducado por plazo en el sistema.",
+                solution: "Soporte coordinando habilitación temporal de plazo."
+            },
+            {
+                id: "ATN-1003",
+                funcCode: "FN-1102",
+                date: "2026-09-28 09:40",
+                channel: "Celular / WhatsApp",
+                unit: "10A. COM. LA CISTERNA",
+                unitCode: "1001",
+                userName: "Sgto. Claudio Fuentes",
+                userRole: "Encargado de Turno",
+                contact: "+56 9 8765 4321",
+                type: "Validacion",
+                priority: "Crítica",
+                status: "Resuelto",
+                description: "Validación de registro digital de parte policial ingresado.",
+                solution: "Se validó y firmó electrónicamente el registro."
+            },
+            {
+                id: "ATN-1004",
+                funcCode: "FN-7734",
+                date: "2026-09-28 10:10",
+                channel: "Presencial",
+                unit: "DEPARTAMENTO DE RECURSOS HUMANOS",
+                unitCode: "2002",
+                userName: "María José Vargas",
+                userRole: "Analista Contable",
+                contact: "mjvargas@institucion.cl",
+                type: "Eliminar Problema",
+                priority: "Media",
+                status: "Pendiente",
+                description: "Solicita eliminar duplicidad de ticket de incidencia erróneo.",
+                solution: "En espera de validación."
+            },
+            {
+                id: "ATN-1005",
+                funcCode: "FN-5561",
+                date: "2026-09-28 10:45",
+                channel: "DOE",
+                unit: "DIRECCION DE EDUCACION YDOCTRINA (DOE)",
+                unitCode: "2003",
+                userName: "Subtcno. Hernán Castro",
+                userRole: "Comandante de Unidad",
+                contact: "DOE Nº 892/2026",
+                type: "Ayuda Remoto",
+                priority: "Alta",
+                status: "Derivado",
+                description: "Asistencia remota para configuración de firma digital institucional.",
+                solution: "Derivado al área de soporte remoto."
+            }
+        ];
+
+        let tickets = JSON.parse(localStorage.getItem('mesaAyudaTickets')) || initialDataset;
+        let filteredTickets = [...tickets];
+        let currentPage = 1;
+        const rowsPerPage = 6;
+        let sortColumn = 'id';
+        let sortAsc = false;
+        let ticketToDeleteId = null;
+
+        let channelChartInstance = null;
+        let typeChartInstance = null;
+
+        window.onload = function() {
+            saveToLocalStorage();
+            updateClock();
+            setInterval(updateClock, 1000);
+            initCharts();
+            applyFilters();
+
+            document.addEventListener('click', function(e) {
+                const container = document.getElementById('formUnitInput');
+                const dropdown = document.getElementById('unitDropdownList');
+                if (container && dropdown && !container.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        };
+
+        function saveToLocalStorage() {
+            localStorage.setItem('mesaAyudaTickets', JSON.stringify(tickets));
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const clockEl = document.getElementById('clockText');
+            if (clockEl) clockEl.textContent = `${dateStr}  •  ${timeStr}`;
+        }
+
+        function showUnitDropdown() {
+            filterUnitList();
+        }
+
+        function filterUnitList() {
+            const inputVal = document.getElementById('formUnitInput').value.trim().toLowerCase();
+            const dropdown = document.getElementById('unitDropdownList');
+            
+            const matches = officialUnits.filter(u => 
+                u.name.toLowerCase().includes(inputVal) || u.code.toLowerCase().includes(inputVal)
+            );
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = `<div class="p-2.5 text-xs text-slate-400 text-center">No se encontraron unidades o códigos coincidentes</div>`;
+            } else {
+                dropdown.innerHTML = matches.map(u => `
+                    <div onclick="selectUnit('${u.code}', '${escapeHtml(u.name).replace(/'/g, "\\'")}')" class="px-3 py-2 text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 cursor-pointer border-b border-slate-100 last:border-none flex items-center justify-between transition-colors">
+                        <span class="font-bold font-mono text-[#004225] bg-slate-100 px-1.5 py-0.5 rounded mr-2">${u.code}</span>
+                        <span class="flex-1">${highlightMatch(u.name, inputVal)}</span>
+                    </div>
+                `).join('');
+            }
+            dropdown.classList.remove('hidden');
+        }
+
+        function highlightMatch(text, query) {
+            if (!query) return text;
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="bg-yellow-100 font-bold text-slate-900">$1</span>');
+        }
+
+        function selectUnit(code, name) {
+            document.getElementById('formUnitInput').value = `${code} - ${name}`;
+            document.getElementById('unitDropdownList').classList.add('hidden');
+        }
+
+        function initCharts() {
+            const channelCtx = document.getElementById('channelChart').getContext('2d');
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+
+            channelChartInstance = new Chart(channelCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#004225', '#16a34a', '#0d9488', '#f59e0b', '#8b5cf6', '#64748b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11, family: 'Inter' }, boxWidth: 12 } }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            typeChartInstance = new Chart(typeCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Cantidad',
+                        data: [],
+                        backgroundColor: '#004225',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Inter', size: 10 } } },
+                        x: { ticks: { font: { family: 'Inter', size: 10 } } }
+                    }
+                }
+            });
+
+            updateCharts();
+        }
+
+        function updateCharts() {
+            if (!channelChartInstance || !typeChartInstance) return;
+
+            const channelCounts = {};
+            tickets.forEach(t => {
+                channelCounts[t.channel] = (channelCounts[t.channel] || 0) + 1;
+            });
+            channelChartInstance.data.labels = Object.keys(channelCounts);
+            channelChartInstance.data.datasets[0].data = Object.values(channelCounts);
+            channelChartInstance.update();
+
+            const typeCounts = {};
+            tickets.forEach(t => {
+                typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
+            });
+            typeChartInstance.data.labels = Object.keys(typeCounts);
+            typeChartInstance.data.datasets[0].data = Object.values(typeCounts);
+            typeChartInstance.update();
+
+            updateKPIs(channelCounts);
+        }
+
+        function updateKPIs(channelCounts) {
+            const total = tickets.length;
+            const resolved = tickets.filter(t => t.status === 'Resuelto').length;
+            const pending = tickets.filter(t => t.status === 'Pendiente' || t.status === 'En Proceso').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statResolved').textContent = resolved;
+
+            const resolvedPct = total > 0 ? Math.round((resolved / total) * 100) : 0;
+            document.getElementById('statResolvedPct').innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${resolvedPct}% Tasa de solución`;
+
+            let topChan = '-';
+            let maxCount = 0;
+            for (const [chan, count] of Object.entries(channelCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topChan = chan;
+                }
+            }
+            document.getElementById('statTopChannel').textContent = topChan;
+        }
+
+        function applyFilters() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const channelVal = document.getElementById('filterChannel').value;
+            const statusVal = document.getElementById('filterStatus').value;
+            const typeVal = document.getElementById('filterType').value;
+            const priorityVal = document.getElementById('filterPriority').value;
+
+            filteredTickets = tickets.filter(t => {
+                const matchesSearch = 
+                    t.id.toLowerCase().includes(searchVal) ||
+                    t.funcCode.toLowerCase().includes(searchVal) ||
+                    t.unit.toLowerCase().includes(searchVal) ||
+                    (t.unitCode && t.unitCode.toLowerCase().includes(searchVal)) ||
+                    t.userName.toLowerCase().includes(searchVal) ||
+                    t.description.toLowerCase().includes(searchVal);
+
+                const matchesChannel = !channelVal || t.channel === channelVal;
+                const matchesStatus = !statusVal || t.status === statusVal;
+                const matchesType = !typeVal || t.type === typeVal;
+                const matchesPriority = !priorityVal || t.priority === priorityVal;
+
+                return matchesSearch && matchesChannel && matchesStatus && matchesType && matchesPriority;
+            });
+
+            currentPage = 1;
+            sortData();
+            renderTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterChannel').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterPriority').value = '';
+            applyFilters();
+            showToast('Filtros reiniciados correctamente', 'info');
+        }
+
+        function sortTable(col) {
+            if (sortColumn === col) {
+                sortAsc = !sortAsc;
+            } else {
+                sortColumn = col;
+                sortAsc = true;
+            }
+            sortData();
+            renderTable();
+        }
+
+        function sortData() {
+            filteredTickets.sort((a, b) => {
+                let valA = a[sortColumn] || '';
+                let valB = b[sortColumn] || '';
+
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            const total = filteredTickets.length;
+            document.getElementById('totalCount').textContent = tickets.length;
+            document.getElementById('showingCount').textContent = total;
+
+            if (total === 0) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('pageIndicator').textContent = 'Página 0 de 0';
+                document.getElementById('prevPageBtn').disabled = true;
+                document.getElementById('nextPageBtn').disabled = true;
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            const totalPages = Math.ceil(total / rowsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, total);
+            const pageData = filteredTickets.slice(startIdx, endIdx);
+
+            pageData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+
+                const uCode = item.unitCode || '----';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-[#004225]">${item.id}</td>
+                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap">${item.date}</td>
+                    <td class="py-3 px-4">
+                        <div class="font-mono font-bold text-slate-800 text-[11px] bg-slate-100 px-1.5 py-0.5 rounded inline-block mb-0.5">${escapeHtml(item.funcCode)}</div>
+                        <div class="text-slate-600 text-[11px]">${escapeHtml(item.userName)} ${item.userRole ? '(' + escapeHtml(item.userRole) + ')' : ''}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="font-mono font-bold text-emerald-800 text-[11px] bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded inline-block mb-0.5">${escapeHtml(uCode)}</div>
+                        <div class="font-bold text-slate-900 text-[11px]">${escapeHtml(item.unit)}</div>
+                    </td>
+                    <td class="py-3 px-4">${getChannelBadge(item.channel)}</td>
+                    <td class="py-3 px-4 font-medium text-slate-800">${escapeHtml(item.type)}</td>
+                    <td class="py-3 px-4">${getPriorityBadge(item.priority)}</td>
+                    <td class="py-3 px-4">${getStatusBadge(item.status)}</td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="viewDetails('${item.id}')" title="Ver Detalle" class="p-1.5 text-slate-500 hover:text-[#004225] hover:bg-emerald-50 rounded-lg transition-colors">
+                                <i class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                            <button onclick="editTicket('${item.id}')" title="Editar" class="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
+                                <i class="fa-solid fa-pen text-sm"></i>
+                            </button>
+                            <button onclick="promptDelete('${item.id}')" title="Eliminar" class="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('pageIndicator').textContent = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById('prevPageBtn').disabled = currentPage === 1;
+            document.getElementById('nextPageBtn').disabled = currentPage === totalPages || totalPages === 0;
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            renderTable();
+        }
+
+        function getChannelBadge(channel) {
+            let icon = 'fa-comment';
+            let bg = 'bg-slate-100 text-slate-700';
+
+            switch (channel) {
+                case 'Correo Electrónico Institucional': icon = 'fa-envelope-circle-check'; bg = 'bg-blue-100 text-blue-800'; break;
+                case 'Correo Electrónico Personal': icon = 'fa-envelope'; bg = 'bg-sky-100 text-sky-800'; break;
+                case 'Teléfono IP': icon = 'fa-phone-volume'; bg = 'bg-indigo-100 text-indigo-800'; break;
+                case 'Celular / WhatsApp': icon = 'fa-brands fa-whatsapp'; bg = 'bg-emerald-100 text-emerald-800'; break;
+                case 'Presencial': icon = 'fa-user-group'; bg = 'bg-teal-100 text-teal-800'; break;
+                case 'DOE': icon = 'fa-file-shield'; bg = 'bg-purple-100 text-purple-800'; break;
+            }
+
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${bg}">
+                <i class="${icon} mr-1"></i> ${channel}
+            </span>`;
+        }
+
+        function getPriorityBadge(priority) {
+            let color = 'bg-slate-100 text-slate-700 border-slate-300';
+            if (priority === 'Baja') color = 'bg-slate-100 text-slate-700 border-slate-200';
+            if (priority === 'Media') color = 'bg-blue-50 text-blue-700 border-blue-200';
+            if (priority === 'Alta') color = 'bg-orange-50 text-orange-700 border-orange-200';
+            if (priority === 'Crítica') color = 'bg-red-50 text-red-700 border-red-200 font-bold';
+
+            return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] border ${color}">
+                ${priority}
+            </span>`;
+        }
+
+        function getStatusBadge(status) {
+            let badge = 'bg-slate-100 text-slate-700';
+            let dot = 'bg-slate-400';
+
+            if (status === 'Pendiente') { badge = 'bg-amber-50 text-amber-800 border border-amber-200'; dot = 'bg-amber-500'; }
+            if (status === 'En Proceso') { badge = 'bg-blue-50 text-blue-800 border border-blue-200'; dot = 'bg-blue-500'; }
+            if (status === 'Resuelto') { badge = 'bg-emerald-50 text-emerald-800 border border-emerald-200'; dot = 'bg-emerald-500'; }
+            if (status === 'Derivado') { badge = 'bg-purple-50 text-purple-800 border border-purple-200'; dot = 'bg-purple-500'; }
+
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${badge}">
+                <span class="w-1.5 h-1.5 rounded-full ${dot} mr-1.5"></span> ${status}
+            </span>`;
+        }
+
+        function saveTicket(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('ticketId').value;
+            const funcCode = document.getElementById('formFuncCode').value.trim();
+            const channel = document.getElementById('formChannel').value;
+            const rawUnitInput = document.getElementById('formUnitInput').value.trim();
+            const userName = document.getElementById('formUserName').value.trim() || 'No especificado';
+            const userRole = document.getElementById('formUserRole').value.trim();
+            const contact = document.getElementById('formContact').value.trim() || 'No especificado';
+            const type = document.getElementById('formType').value;
+            const priority = document.getElementById('formPriority').value;
+            const status = document.getElementById('formStatus').value;
+            const description = document.getElementById('formDescription').value.trim();
+            const solution = document.getElementById('formSolution').value.trim();
+
+            if (!rawUnitInput) {
+                showToast('Debe seleccionar o ingresar una unidad válida', 'warning');
+                return;
+            }
+
+            // Extract unit code and name if format is "CODE - NAME" or match from official list
+            let unitCode = '';
+            let unitName = rawUnitInput;
+
+            if (rawUnitInput.includes(' - ')) {
+                const parts = rawUnitInput.split(' - ');
+                unitCode = parts[0].trim();
+                unitName = parts.slice(1).join(' - ').trim();
+            } else {
+                const found = officialUnits.find(u => u.name.toLowerCase() === rawUnitInput.toLowerCase() || u.code === rawUnitInput);
+                if (found) {
+                    unitCode = found.code;
+                    unitName = found.name;
+                } else {
+                    unitCode = '2000'; // Default custom code
+                }
+            }
+
+            if (id) {
+                const idx = tickets.findIndex(t => t.id === id);
+                if (idx !== -1) {
+                    tickets[idx] = {
+                        ...tickets[idx],
+                        funcCode, channel, unit: unitName, unitCode, userName, userRole, contact, type, priority, status, description, solution
+                    };
+                    showToast(`Atención ${id} actualizada con éxito`, 'success');
+                }
+            } else {
+                const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(t.id.replace('ATN-', '')) || 1000)) + 1 : 1001;
+                const newId = `ATN-${nextNum}`;
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+                tickets.unshift({
+                    id: newId,
+                    funcCode,
+                    date: dateStr,
+                    channel, 
+                    unit: unitName, 
+                    unitCode, 
+                    userName, 
+                    userRole, 
+                    contact, 
+                    type, 
+                    priority, 
+                    status, 
+                    description, 
+                    solution: solution || 'En atención inicial.'
+                });
+                showToast(`Nueva atención ${newId} registrada correctamente`, 'success');
+            }
+
+            saveToLocalStorage();
+            updateCharts();
+            applyFilters();
+            closeModal('ticketModal');
+        }
+
+        function editTicket(id) {
+            const ticket = tickets.find(t => t.id === id);
+            if (!ticket) return;
+
+            document.getElementById('modalTitle').textContent = `Editar Atención ${ticket.id}`;
+            document.getElementById('ticketId').value = ticket.id;
+            document.getElementById('formFuncCode').value = ticket.funcCode || '';
+            document.getElementById('formChannel').value = ticket.channel;
+            document.getElementById('formUnitInput').value = `${ticket.unitCode || ''} - ${ticket.unit}`;
+            document.getElementById('formUserName').value = ticket.userName;
+            document.getElementById('formUserRole').value = ticket.userRole || '';
+            document.getElementById('formContact').value = ticket.contact;
+            document.getElementById('formType').value = ticket.type;
+            document.getElementById('formPriority').value = ticket.priority;
+            document.getElementById('formStatus').value = ticket.status;
+            document.getElementById('formDescription').value = ticket.description;
+            document.getElementById('formSolution').value = ticket.solution || '';
+
+            openModal('ticketModal');
+        }
+
+        function viewDetails(id) {
+            const ticket = tickets.find(t => t.id === id);
+            if (!ticket) return;
+
+            document.getElementById('detailId').textContent = ticket.id;
+            document.getElementById('detailFuncCode').textContent = ticket.funcCode || 'N/A';
+            document.getElementById('detailDate').textContent = ticket.date;
+            document.getElementById('detailUnit').innerHTML = `<span class="font-mono bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded mr-1">${ticket.unitCode || '----'}</span> ${escapeHtml(ticket.unit)}`;
+            document.getElementById('detailChannel').textContent = ticket.channel;
+            document.getElementById('detailUser').textContent = `${ticket.userName} ${ticket.userRole ? '(' + ticket.userRole + ')' : ''}`;
+            document.getElementById('detailContact').textContent = ticket.contact;
+            document.getElementById('detailType').textContent = ticket.type;
+            document.getElementById('detailDescription').textContent = ticket.description;
+            document.getElementById('detailSolution').textContent = ticket.solution || 'Sin solución o comentarios registrados.';
+
+            document.getElementById('detailPriorityBadge').innerHTML = getPriorityBadge(ticket.priority);
+            document.getElementById('detailStatusBadge').innerHTML = getStatusBadge(ticket.status);
+
+            openModal('detailModal');
+        }
+
+        function promptDelete(id) {
+            ticketToDeleteId = id;
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.onclick = function() {
+                if (ticketToDeleteId) {
+                    tickets = tickets.filter(t => t.id !== ticketToDeleteId);
+                    saveToLocalStorage();
+                    updateCharts();
+                    applyFilters();
+                    showToast(`Atención ${ticketToDeleteId} eliminada`, 'info');
+                    closeModal('deleteModal');
+                    ticketToDeleteId = null;
+                }
+            };
+            openModal('deleteModal');
+        }
+
+        function exportToCSV() {
+            if (filteredTickets.length === 0) {
+                showToast('No hay datos para exportar', 'warning');
+                return;
+            }
+
+            const headers = ['ID', 'Cod. Funcionario', 'Fecha', 'Vía Contacto', 'Cod. Unidad', 'Unidad / Dependencia', 'Usuario Solicitante', 'Cargo', 'Contacto', 'Tipo Requerimiento', 'Prioridad', 'Estado', 'Descripción', 'Solución'];
+            
+            const csvRows = [headers.join(',')];
+
+            filteredTickets.forEach(t => {
+                const row = [
+                    `"${t.id}"`,
+                    `"${t.funcCode || ''}"`,
+                    `"${t.date}"`,
+                    `"${t.channel}"`,
+                    `"${t.unitCode || ''}"`,
+                    `"${t.unit.replace(/"/g, '""')}"`,
+                    `"${t.userName.replace(/"/g, '""')}"`,
+                    `"${(t.userRole || '').replace(/"/g, '""')}"`,
+                    `"${t.contact.replace(/"/g, '""')}"`,
+                    `"${t.type}"`,
+                    `"${t.priority}"`,
+                    `"${t.status}"`,
+                    `"${t.description.replace(/"/g, '""')}"`,
+                    `"${(t.solution || '').replace(/"/g, '""')}"`
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            const csvContent = "\uFEFF" + csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Registro_Mesa_Ayuda_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('Archivo CSV exportado exitosamente', 'success');
+        }
+
+        function openModal(modalId) {
+            if (modalId === 'ticketModal' && !document.getElementById('ticketId').value) {
+                document.getElementById('ticketForm').reset();
+                document.getElementById('ticketId').value = '';
+                document.getElementById('modalTitle').textContent = 'Registrar Nueva Atención';
+            }
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            if (modalId === 'ticketModal') {
+                document.getElementById('ticketForm').reset();
+                document.getElementById('ticketId').value = '';
+                document.getElementById('unitDropdownList').classList.add('hidden');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            let bg = 'bg-slate-900 text-white';
+            let icon = 'fa-circle-info text-blue-400';
+
+            if (type === 'success') { bg = 'bg-slate-900 text-white'; icon = 'fa-circle-check text-emerald-400'; }
+            if (type === 'warning') { bg = 'bg-amber-900 text-amber-50'; icon = 'fa-triangle-exclamation text-amber-300'; }
+            if (type === 'error') { bg = 'bg-red-900 text-white'; icon = 'fa-circle-xmark text-red-400'; }
+
+            toast.className = `flex items-center space-x-3 px-4 py-3 rounded-xl shadow-lg border border-slate-700 ${bg} text-xs font-medium toast-enter pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('toast-show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('toast-show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+    </script>
+</body>
+</html>
