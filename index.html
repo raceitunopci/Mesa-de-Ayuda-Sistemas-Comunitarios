@@ -547,8 +547,10 @@
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
+        // Google Apps Script Web App URL
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOYVLyuL1lDgURm1qsKTl-Z4IggR8W_P8zcF2oNLuAUnmhP3v2cDwMi6VgSx_3c7c6Ug/exec";
-        // Official complete units list mapped from Excel (Column B as code, Column C or other text as name)
+
+        // Official complete units list mapped from Excel
         let officialUnits = [
             { code: "1001", name: "10A. COM. LA CISTERNA" },
             { code: "1002", name: "11A. COM. LO ESPEJO" },
@@ -651,7 +653,6 @@
             { code: "2005", name: "CENTRAL TELEFONICA MESA DE AYUDA" }
         ];
 
-        // Function to handle uploading Excel file (`COD-UNI_2.xlsx`) and mapping Column B as Unit Code
         function handleExcelUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -666,9 +667,9 @@
                     const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                     let newUnits = [];
-                    json.forEach((row, idx) => {
+                    json.forEach((row) => {
                         if (row && row.length >= 2) {
-                            let codeVal = String(row[1] || '').trim(); // Column B
+                            let codeVal = String(row[1] || '').trim();
                             let nameVal = '';
                             for (let c = 2; c < row.length; c++) {
                                 if (row[c] && String(row[c]).trim().length > 0) {
@@ -699,7 +700,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // Default Dataset with realistic Chilean institution examples
         const initialDataset = [
             {
                 id: "ATN-1001",
@@ -748,38 +748,6 @@
                 status: "Resuelto",
                 description: "Validación de registro digital de parte policial ingresado.",
                 solution: "Se validó y firmó electrónicamente el registro."
-            },
-            {
-                id: "ATN-1004",
-                funcCode: "FN-7734",
-                date: "2026-09-28 10:10",
-                channel: "Presencial",
-                unit: "DEPARTAMENTO DE RECURSOS HUMANOS",
-                unitCode: "2002",
-                userName: "María José Vargas",
-                userRole: "Analista Contable",
-                contact: "mjvargas@institucion.cl",
-                type: "Eliminar Problema",
-                priority: "Media",
-                status: "Pendiente",
-                description: "Solicita eliminar duplicidad de ticket de incidencia erróneo.",
-                solution: "En espera de validación."
-            },
-            {
-                id: "ATN-1005",
-                funcCode: "FN-5561",
-                date: "2026-09-28 10:45",
-                channel: "DOE",
-                unit: "DIRECCION DE EDUCACION YDOCTRINA (DOE)",
-                unitCode: "2003",
-                userName: "Subtcno. Hernán Castro",
-                userRole: "Comandante de Unidad",
-                contact: "DOE Nº 892/2026",
-                type: "Ayuda Remoto",
-                priority: "Alta",
-                status: "Derivado",
-                description: "Asistencia remota para configuración de firma digital institucional.",
-                solution: "Derivado al área de soporte remoto."
             }
         ];
 
@@ -1139,96 +1107,98 @@
         }
 
         async function saveTicket(e) {
-    e.preventDefault();
+            e.preventDefault();
 
-    const id = document.getElementById('ticketId').value;
-    const funcCode = document.getElementById('formFuncCode').value.trim();
-    const channel = document.getElementById('formChannel').value;
-    const rawUnitInput = document.getElementById('formUnitInput').value.trim();
-    const userName = document.getElementById('formUserName').value.trim() || 'No especificado';
-    const userRole = document.getElementById('formUserRole').value.trim();
-    const contact = document.getElementById('formContact').value.trim() || 'No especificado';
-    const type = document.getElementById('formType').value;
-    const priority = document.getElementById('formPriority').value;
-    const status = document.getElementById('formStatus').value;
-    const description = document.getElementById('formDescription').value.trim();
-    const solution = document.getElementById('formSolution').value.trim();
+            const id = document.getElementById('ticketId').value;
+            const funcCode = document.getElementById('formFuncCode').value.trim();
+            const channel = document.getElementById('formChannel').value;
+            const rawUnitInput = document.getElementById('formUnitInput').value.trim();
+            const userName = document.getElementById('formUserName').value.trim() || 'No especificado';
+            const userRole = document.getElementById('formUserRole').value.trim();
+            const contact = document.getElementById('formContact').value.trim() || 'No especificado';
+            const type = document.getElementById('formType').value;
+            const priority = document.getElementById('formPriority').value;
+            const status = document.getElementById('formStatus').value;
+            const description = document.getElementById('formDescription').value.trim();
+            const solution = document.getElementById('formSolution').value.trim();
 
-    if (!rawUnitInput) {
-        showToast('Debe seleccionar o ingresar una unidad válida', 'warning');
-        return;
-    }
+            if (!rawUnitInput) {
+                showToast('Debe seleccionar o ingresar una unidad válida', 'warning');
+                return;
+            }
 
-    let unitCode = '';
-    let unitName = rawUnitInput;
+            let unitCode = '';
+            let unitName = rawUnitInput;
 
-    if (rawUnitInput.includes(' - ')) {
-        const parts = rawUnitInput.split(' - ');
-        unitCode = parts[0].trim();
-        unitName = parts.slice(1).join(' - ').trim();
-    } else {
-        const found = officialUnits.find(u => u.name.toLowerCase() === rawUnitInput.toLowerCase() || u.code === rawUnitInput);
-        if (found) {
-            unitCode = found.code;
-            unitName = found.name;
-        } else {
-            unitCode = '2000';
+            if (rawUnitInput.includes(' - ')) {
+                const parts = rawUnitInput.split(' - ');
+                unitCode = parts[0].trim();
+                unitName = parts.slice(1).join(' - ').trim();
+            } else {
+                const found = officialUnits.find(u => u.name.toLowerCase() === rawUnitInput.toLowerCase() || u.code === rawUnitInput);
+                if (found) {
+                    unitCode = found.code;
+                    unitName = found.name;
+                } else {
+                    unitCode = '2000';
+                }
+            }
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(t.id.replace('ATN-', '')) || 1000)) + 1 : 1001;
+            const ticketIdToSave = id || `ATN-${nextNum}`;
+
+            const ticketPayload = {
+                id: ticketIdToSave,
+                funcCode,
+                date: dateStr,
+                channel, 
+                unit: unitName, 
+                unitCode, 
+                userName, 
+                userRole, 
+                contact, 
+                type, 
+                priority, 
+                status, 
+                description, 
+                solution: solution || 'En atención inicial.'
+            };
+
+            // 1. Guardar localmente
+            if (id) {
+                const idx = tickets.findIndex(t => t.id === id);
+                if (idx !== -1) tickets[idx] = ticketPayload;
+            } else {
+                tickets.unshift(ticketPayload);
+            }
+
+            saveToLocalStorage();
+            updateCharts();
+            applyFilters();
+            closeModal('ticketModal');
+
+            // 2. Enviar a Google Drive / Sheets
+            if (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) {
+                showToast('Sincronizando con Google Drive...', 'info');
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(ticketPayload)
+                    });
+                    showToast(`Atención ${ticketIdToSave} guardada en tu Google Drive`, 'success');
+                } catch (err) {
+                    console.error('Error al sincronizar con Google Drive:', err);
+                    showToast('Guardado localmente. Falla al conectar con Google Drive', 'warning');
+                }
+            } else {
+                showToast(`Atención ${ticketIdToSave} registrada localmente`, 'success');
+            }
         }
-    }
 
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(t.id.replace('ATN-', '')) || 1000)) + 1 : 1001;
-    const ticketIdToSave = id || `ATN-${nextNum}`;
-
-    const ticketPayload = {
-        id: ticketIdToSave,
-        funcCode,
-        date: dateStr,
-        channel, 
-        unit: unitName, 
-        unitCode, 
-        userName, 
-        userRole, 
-        contact, 
-        type, 
-        priority, 
-        status, 
-        description, 
-        solution: solution || 'En atención inicial.'
-    };
-
-    // 1. Guardar localmente
-    if (id) {
-        const idx = tickets.findIndex(t => t.id === id);
-        if (idx !== -1) tickets[idx] = ticketPayload;
-    } else {
-        tickets.unshift(ticketPayload);
-    }
-
-    saveToLocalStorage();
-    updateCharts();
-    applyFilters();
-    closeModal('ticketModal');
-
-    // 2. Enviar a Google Drive
-    if (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL && !SCRIPT_URL.includes("AQUI_PEGA_TU_URL")) {
-        showToast('Sincronizando con Google Drive...', 'info');
-        try {
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(ticketPayload)
-            });
-            showToast(`Atención ${ticketIdToSave} guardada en tu Google Drive`, 'success');
-        } catch (err) {
-            console.error('Error al sincronizar con Google Drive:', err);
-            showToast('Guardado localmente. Falla al conectar con Google Drive', 'warning');
-        }
-    } else {
-        showToast(`Atención ${ticketIdToSave} registrada localmente`, 'success');
-    }
         function editTicket(id) {
             const ticket = tickets.find(t => t.id === id);
             if (!ticket) return;
@@ -1294,7 +1264,6 @@
                 return;
             }
 
-            // Format data rows for Excel / Google Sheets
             const sheetData = filteredTickets.map(t => ({
                 "ID Atención": t.id,
                 "Código Funcionario": t.funcCode || '',
@@ -1312,22 +1281,19 @@
                 "Solución / Observaciones": t.solution || ''
             }));
 
-            // Create Worksheet and Workbook using SheetJS
             const worksheet = XLSX.utils.json_to_sheet(sheetData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Mesa de Ayuda");
 
-            // Auto-fit column widths for better visual presentation in Sheet
             const colWidths = Object.keys(sheetData[0]).map(key => ({
                 wch: Math.max(key.length, ...sheetData.map(row => String(row[key] || '').length)) + 3
             }));
             worksheet['!cols'] = colWidths;
 
-            // Trigger file download (.xlsx format compatible with Google Sheets & Microsoft Excel)
             const fileName = `Mesa_Ayuda_Sistemas_Comunitarios_${new Date().toISOString().slice(0,10)}.xlsx`;
             XLSX.writeFile(workbook, fileName);
 
-            showToast('Archivo Sheet (.xlsx) exportado con éxito. Listo para guardar en la nube.', 'success');
+            showToast('Archivo Sheet (.xlsx) exportado con éxito.', 'success');
         }
 
         function openModal(modalId) {
