@@ -36,13 +36,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (xlsx) for Excel / Google Sheets exporting -->
+    <!-- SheetJS (xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom Animations and styles -->
     <style>
         body { font-family: 'Inter', sans-serif; }
         .glass-header { backdrop-filter: blur(8px); background-color: rgba(255, 255, 255, 0.95); }
@@ -60,7 +59,6 @@
     <header class="sticky top-0 z-30 glass-header border-b border-emerald-900/20 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
-                <!-- Left: Carabineros Logo & Title -->
                 <div class="flex items-center space-x-3.5">
                     <div class="bg-white p-1 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center flex-shrink-0">
                         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAA5CAMAAAA5l7nEAAAAA1BMVEUAAACnej3aAAAASElEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4G827AABXUe2jgAAAABJRU5ErkJggg==" alt="Carabineros de Chile" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://placehold.co/180x50/004225/C5A059?text=CARABINEROS'">
@@ -71,13 +69,11 @@
                     </div>
                 </div>
                 
-                <!-- Center: Larger Clock and Date -->
                 <div id="liveClock" class="hidden md:flex items-center text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 shadow-xs">
                     <i class="fa-regular fa-clock mr-2 text-[#004225] text-base"></i>
                     <span id="clockText">--/--/---- --:--:--</span>
                 </div>
 
-                <!-- Right: Action Button -->
                 <div class="flex items-center space-x-3">
                     <button onclick="openModal('ticketModal')" class="inline-flex items-center justify-center px-4 py-2.5 bg-[#004225] hover:bg-[#14532d] active:bg-[#052e16] text-white text-sm font-medium rounded-xl shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004225] transform hover:-translate-y-0.5">
                         <i class="fa-solid fa-plus mr-2 text-xs"></i>
@@ -188,7 +184,6 @@
 
         <!-- Main Data Management Section -->
         <section class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <!-- Filter Toolbar -->
             <div class="p-5 border-b border-slate-200 space-y-4">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div class="flex items-center space-x-3 flex-wrap gap-2">
@@ -215,7 +210,6 @@
                     </div>
                 </div>
 
-                <!-- Multi-Filter Control Row -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
                     <div class="relative sm:col-span-2 lg:col-span-1">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -297,7 +291,6 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-200 bg-white font-normal">
-                        <!-- Dynamic JS content rows -->
                     </tbody>
                 </table>
                 <div id="emptyState" class="hidden py-12 text-center text-slate-500">
@@ -306,7 +299,6 @@
                 </div>
             </div>
 
-            <!-- Table Footer Pagination Bar -->
             <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-600 gap-3">
                 <div>
                     Mostrando <span id="showingCount" class="font-semibold text-slate-900">0</span> de <span id="totalCount" class="font-semibold text-slate-900">0</span> atenciones registradas
@@ -360,7 +352,6 @@
                         </select>
                     </div>
 
-                    <!-- Unidad / Dependencia (Con Autocompletado y Código Oficial) -->
                     <div class="sm:col-span-2 relative">
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Unidad / Dependencia (Incluye Código Oficial) <span class="text-red-500">*</span></label>
                         <div class="relative">
@@ -543,14 +534,13 @@
         </div>
     </div>
 
-    <!-- Toast Notification Box Container -->
+    <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
-        // Google Apps Script Web App URL
+        // Google Apps Script URL
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOYVLyuL1lDgURm1qsKTl-Z4IggR8W_P8zcF2oNLuAUnmhP3v2cDwMi6VgSx_3c7c6Ug/exec";
 
-        // Official complete units list mapped from Excel
         let officialUnits = [
             { code: "1001", name: "10A. COM. LA CISTERNA" },
             { code: "1002", name: "11A. COM. LO ESPEJO" },
@@ -653,53 +643,6 @@
             { code: "2005", name: "CENTRAL TELEFONICA MESA DE AYUDA" }
         ];
 
-        function handleExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                    let newUnits = [];
-                    json.forEach((row) => {
-                        if (row && row.length >= 2) {
-                            let codeVal = String(row[1] || '').trim();
-                            let nameVal = '';
-                            for (let c = 2; c < row.length; c++) {
-                                if (row[c] && String(row[c]).trim().length > 0) {
-                                    nameVal = String(row[c]).trim();
-                                    break;
-                                }
-                            }
-                            if (!nameVal && row[0]) nameVal = String(row[0]).trim();
-
-                            if (codeVal && nameVal && codeVal.toLowerCase() !== 'codigo' && codeVal.toLowerCase() !== 'código unidad') {
-                                newUnits.push({ code: codeVal, name: nameVal.toUpperCase() });
-                            }
-                        }
-                    });
-
-                    if (newUnits.length > 0) {
-                        officialUnits = newUnits;
-                        document.getElementById('excelStatusLabel').textContent = `Excel Cargado (${newUnits.length} un.)`;
-                        showToast(`Se cargaron ${newUnits.length} unidades correctamente desde el Excel`, 'success');
-                    } else {
-                        showToast('No se pudieron extraer datos válidos de la Columna B del Excel', 'warning');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showToast('Error al leer el archivo Excel. Verifique el formato.', 'error');
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
         const initialDataset = [
             {
                 id: "ATN-1001",
@@ -751,7 +694,26 @@
             }
         ];
 
-        let tickets = JSON.parse(localStorage.getItem('mesaAyudaTickets')) || initialDataset;
+        // Carga segura de localStorage con respaldo anti-fallos
+        let tickets = [];
+        try {
+            const stored = localStorage.getItem('mesaAyudaTickets');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    tickets = parsed;
+                } else {
+                    tickets = [...initialDataset];
+                }
+            } else {
+                tickets = [...initialDataset];
+            }
+        } catch (e) {
+            console.warn("Memoria corrupta detectada, restaurando estado inicial...", e);
+            tickets = [...initialDataset];
+            localStorage.setItem('mesaAyudaTickets', JSON.stringify(tickets));
+        }
+
         let filteredTickets = [...tickets];
         let currentPage = 1;
         const rowsPerPage = 6;
@@ -766,8 +728,9 @@
             saveToLocalStorage();
             updateClock();
             setInterval(updateClock, 1000);
-            initCharts();
-            applyFilters();
+            
+            try { initCharts(); } catch(e) { console.error("Error al iniciar gráficos:", e); }
+            try { applyFilters(); } catch(e) { console.error("Error al aplicar filtros:", e); }
 
             document.addEventListener('click', function(e) {
                 const container = document.getElementById('formUnitInput');
@@ -779,7 +742,11 @@
         };
 
         function saveToLocalStorage() {
-            localStorage.setItem('mesaAyudaTickets', JSON.stringify(tickets));
+            try {
+                localStorage.setItem('mesaAyudaTickets', JSON.stringify(tickets));
+            } catch(e) {
+                console.error("Error guardando en localStorage", e);
+            }
         }
 
         function updateClock() {
@@ -795,8 +762,11 @@
         }
 
         function filterUnitList() {
-            const inputVal = document.getElementById('formUnitInput').value.trim().toLowerCase();
+            const inputEl = document.getElementById('formUnitInput');
+            if (!inputEl) return;
+            const inputVal = inputEl.value.trim().toLowerCase();
             const dropdown = document.getElementById('unitDropdownList');
+            if (!dropdown) return;
             
             const matches = officialUnits.filter(u => 
                 u.name.toLowerCase().includes(inputVal) || u.code.toLowerCase().includes(inputVal)
@@ -822,15 +792,18 @@
         }
 
         function selectUnit(code, name) {
-            document.getElementById('formUnitInput').value = `${code} - ${name}`;
-            document.getElementById('unitDropdownList').classList.add('hidden');
+            const inputEl = document.getElementById('formUnitInput');
+            if (inputEl) inputEl.value = `${code} - ${name}`;
+            const dropdown = document.getElementById('unitDropdownList');
+            if (dropdown) dropdown.classList.add('hidden');
         }
 
         function initCharts() {
-            const channelCtx = document.getElementById('channelChart').getContext('2d');
-            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            const channelCanvas = document.getElementById('channelChart');
+            const typeCanvas = document.getElementById('typeChart');
+            if (!channelCanvas || !typeCanvas) return;
 
-            channelChartInstance = new Chart(channelCtx, {
+            channelChartInstance = new Chart(channelCanvas.getContext('2d'), {
                 type: 'doughnut',
                 data: {
                     labels: [],
@@ -851,7 +824,7 @@
                 }
             });
 
-            typeChartInstance = new Chart(typeCtx, {
+            typeChartInstance = new Chart(typeCanvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: [],
@@ -865,9 +838,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Inter', size: 10 } } },
                         x: { ticks: { font: { family: 'Inter', size: 10 } } }
@@ -883,7 +854,7 @@
 
             const channelCounts = {};
             tickets.forEach(t => {
-                channelCounts[t.channel] = (channelCounts[t.channel] || 0) + 1;
+                if (t && t.channel) channelCounts[t.channel] = (channelCounts[t.channel] || 0) + 1;
             });
             channelChartInstance.data.labels = Object.keys(channelCounts);
             channelChartInstance.data.datasets[0].data = Object.values(channelCounts);
@@ -891,7 +862,7 @@
 
             const typeCounts = {};
             tickets.forEach(t => {
-                typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
+                if (t && t.type) typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
             });
             typeChartInstance.data.labels = Object.keys(typeCounts);
             typeChartInstance.data.datasets[0].data = Object.values(typeCounts);
@@ -902,42 +873,51 @@
 
         function updateKPIs(channelCounts) {
             const total = tickets.length;
-            const resolved = tickets.filter(t => t.status === 'Resuelto').length;
-            const pending = tickets.filter(t => t.status === 'Pendiente' || t.status === 'En Proceso').length;
+            const resolved = tickets.filter(t => t && t.status === 'Resuelto').length;
+            const pending = tickets.filter(t => t && (t.status === 'Pendiente' || t.status === 'En Proceso')).length;
 
-            document.getElementById('statTotal').textContent = total;
-            document.getElementById('statPending').textContent = pending;
-            document.getElementById('statResolved').textContent = resolved;
+            const elTotal = document.getElementById('statTotal');
+            const elPending = document.getElementById('statPending');
+            const elResolved = document.getElementById('statResolved');
+            const elPct = document.getElementById('statResolvedPct');
+            const elTop = document.getElementById('statTopChannel');
+
+            if (elTotal) elTotal.textContent = total;
+            if (elPending) elPending.textContent = pending;
+            if (elResolved) elResolved.textContent = resolved;
 
             const resolvedPct = total > 0 ? Math.round((resolved / total) * 100) : 0;
-            document.getElementById('statResolvedPct').innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${resolvedPct}% Tasa de solución`;
+            if (elPct) elPct.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${resolvedPct}% Tasa de solución`;
 
             let topChan = '-';
             let maxCount = 0;
-            for (const [chan, count] of Object.entries(channelCounts)) {
-                if (count > maxCount) {
-                    maxCount = count;
-                    topChan = chan;
+            if (channelCounts) {
+                for (const [chan, count] of Object.entries(channelCounts)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        topChan = chan;
+                    }
                 }
             }
-            document.getElementById('statTopChannel').textContent = topChan;
+            if (elTop) elTop.textContent = topChan;
         }
 
         function applyFilters() {
-            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
-            const channelVal = document.getElementById('filterChannel').value;
-            const statusVal = document.getElementById('filterStatus').value;
-            const typeVal = document.getElementById('filterType').value;
-            const priorityVal = document.getElementById('filterPriority').value;
+            const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+            const channelVal = document.getElementById('filterChannel')?.value || '';
+            const statusVal = document.getElementById('filterStatus')?.value || '';
+            const typeVal = document.getElementById('filterType')?.value || '';
+            const priorityVal = document.getElementById('filterPriority')?.value || '';
 
             filteredTickets = tickets.filter(t => {
+                if (!t) return false;
                 const matchesSearch = 
-                    t.id.toLowerCase().includes(searchVal) ||
-                    t.funcCode.toLowerCase().includes(searchVal) ||
-                    t.unit.toLowerCase().includes(searchVal) ||
-                    (t.unitCode && t.unitCode.toLowerCase().includes(searchVal)) ||
-                    t.userName.toLowerCase().includes(searchVal) ||
-                    t.description.toLowerCase().includes(searchVal);
+                    (t.id && String(t.id).toLowerCase().includes(searchVal)) ||
+                    (t.funcCode && String(t.funcCode).toLowerCase().includes(searchVal)) ||
+                    (t.unit && String(t.unit).toLowerCase().includes(searchVal)) ||
+                    (t.unitCode && String(t.unitCode).toLowerCase().includes(searchVal)) ||
+                    (t.userName && String(t.userName).toLowerCase().includes(searchVal)) ||
+                    (t.description && String(t.description).toLowerCase().includes(searchVal));
 
                 const matchesChannel = !channelVal || t.channel === channelVal;
                 const matchesStatus = !statusVal || t.status === statusVal;
@@ -953,11 +933,11 @@
         }
 
         function resetFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('filterChannel').value = '';
-            document.getElementById('filterStatus').value = '';
-            document.getElementById('filterType').value = '';
-            document.getElementById('filterPriority').value = '';
+            if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+            if (document.getElementById('filterChannel')) document.getElementById('filterChannel').value = '';
+            if (document.getElementById('filterStatus')) document.getElementById('filterStatus').value = '';
+            if (document.getElementById('filterType')) document.getElementById('filterType').value = '';
+            if (document.getElementById('filterPriority')) document.getElementById('filterPriority').value = '';
             applyFilters();
             showToast('Filtros reiniciados correctamente', 'info');
         }
@@ -990,20 +970,21 @@
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const emptyState = document.getElementById('emptyState');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             const total = filteredTickets.length;
-            document.getElementById('totalCount').textContent = tickets.length;
-            document.getElementById('showingCount').textContent = total;
+            if (document.getElementById('totalCount')) document.getElementById('totalCount').textContent = tickets.length;
+            if (document.getElementById('showingCount')) document.getElementById('showingCount').textContent = total;
 
             if (total === 0) {
-                emptyState.classList.remove('hidden');
-                document.getElementById('pageIndicator').textContent = 'Página 0 de 0';
-                document.getElementById('prevPageBtn').disabled = true;
-                document.getElementById('nextPageBtn').disabled = true;
+                if (emptyState) emptyState.classList.remove('hidden');
+                if (document.getElementById('pageIndicator')) document.getElementById('pageIndicator').textContent = 'Página 0 de 0';
+                if (document.getElementById('prevPageBtn')) document.getElementById('prevPageBtn').disabled = true;
+                if (document.getElementById('nextPageBtn')) document.getElementById('nextPageBtn').disabled = true;
                 return;
             } else {
-                emptyState.classList.add('hidden');
+                if (emptyState) emptyState.classList.add('hidden');
             }
 
             const totalPages = Math.ceil(total / rowsPerPage);
@@ -1021,8 +1002,8 @@
                 const uCode = item.unitCode || '----';
 
                 tr.innerHTML = `
-                    <td class="py-3 px-4 font-mono font-bold text-[#004225]">${item.id}</td>
-                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap">${item.date}</td>
+                    <td class="py-3 px-4 font-mono font-bold text-[#004225]">${escapeHtml(item.id)}</td>
+                    <td class="py-3 px-4 text-slate-500 whitespace-nowrap">${escapeHtml(item.date)}</td>
                     <td class="py-3 px-4">
                         <div class="font-mono font-bold text-slate-800 text-[11px] bg-slate-100 px-1.5 py-0.5 rounded inline-block mb-0.5">${escapeHtml(item.funcCode)}</div>
                         <div class="text-slate-600 text-[11px]">${escapeHtml(item.userName)} ${item.userRole ? '(' + escapeHtml(item.userRole) + ')' : ''}</div>
@@ -1052,9 +1033,9 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('pageIndicator').textContent = `Página ${currentPage} de ${totalPages}`;
-            document.getElementById('prevPageBtn').disabled = currentPage === 1;
-            document.getElementById('nextPageBtn').disabled = currentPage === totalPages || totalPages === 0;
+            if (document.getElementById('pageIndicator')) document.getElementById('pageIndicator').textContent = `Página ${currentPage} de ${totalPages}`;
+            if (document.getElementById('prevPageBtn')) document.getElementById('prevPageBtn').disabled = currentPage === 1;
+            if (document.getElementById('nextPageBtn')) document.getElementById('nextPageBtn').disabled = currentPage === totalPages || totalPages === 0;
         }
 
         function changePage(delta) {
@@ -1076,7 +1057,7 @@
             }
 
             return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${bg}">
-                <i class="${icon} mr-1"></i> ${channel}
+                <i class="${icon} mr-1"></i> ${escapeHtml(channel)}
             </span>`;
         }
 
@@ -1088,7 +1069,7 @@
             if (priority === 'Crítica') color = 'bg-red-50 text-red-700 border-red-200 font-bold';
 
             return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] border ${color}">
-                ${priority}
+                ${escapeHtml(priority)}
             </span>`;
         }
 
@@ -1102,7 +1083,7 @@
             if (status === 'Derivado') { badge = 'bg-purple-50 text-purple-800 border border-purple-200'; dot = 'bg-purple-500'; }
 
             return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${badge}">
-                <span class="w-1.5 h-1.5 rounded-full ${dot} mr-1.5"></span> ${status}
+                <span class="w-1.5 h-1.5 rounded-full ${dot} mr-1.5"></span> ${escapeHtml(status)}
             </span>`;
         }
 
@@ -1146,7 +1127,7 @@
 
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(t.id.replace('ATN-', '')) || 1000)) + 1 : 1001;
+            const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(String(t.id).replace('ATN-', '')) || 1000)) + 1 : 1001;
             const ticketIdToSave = id || `ATN-${nextNum}`;
 
             const ticketPayload = {
@@ -1166,7 +1147,6 @@
                 solution: solution || 'En atención inicial.'
             };
 
-            // 1. Guardar localmente
             if (id) {
                 const idx = tickets.findIndex(t => t.id === id);
                 if (idx !== -1) tickets[idx] = ticketPayload;
@@ -1179,7 +1159,6 @@
             applyFilters();
             closeModal('ticketModal');
 
-            // 2. Enviar a Google Drive / Sheets
             if (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) {
                 showToast('Sincronizando con Google Drive...', 'info');
                 try {
@@ -1206,15 +1185,15 @@
             document.getElementById('modalTitle').textContent = `Editar Atención ${ticket.id}`;
             document.getElementById('ticketId').value = ticket.id;
             document.getElementById('formFuncCode').value = ticket.funcCode || '';
-            document.getElementById('formChannel').value = ticket.channel;
-            document.getElementById('formUnitInput').value = `${ticket.unitCode || ''} - ${ticket.unit}`;
-            document.getElementById('formUserName').value = ticket.userName;
+            document.getElementById('formChannel').value = ticket.channel || '';
+            document.getElementById('formUnitInput').value = `${ticket.unitCode || ''} - ${ticket.unit || ''}`;
+            document.getElementById('formUserName').value = ticket.userName || '';
             document.getElementById('formUserRole').value = ticket.userRole || '';
-            document.getElementById('formContact').value = ticket.contact;
-            document.getElementById('formType').value = ticket.type;
-            document.getElementById('formPriority').value = ticket.priority;
-            document.getElementById('formStatus').value = ticket.status;
-            document.getElementById('formDescription').value = ticket.description;
+            document.getElementById('formContact').value = ticket.contact || '';
+            document.getElementById('formType').value = ticket.type || '';
+            document.getElementById('formPriority').value = ticket.priority || 'Media';
+            document.getElementById('formStatus').value = ticket.status || 'Pendiente';
+            document.getElementById('formDescription').value = ticket.description || '';
             document.getElementById('formSolution').value = ticket.solution || '';
 
             openModal('ticketModal');
@@ -1296,6 +1275,53 @@
             showToast('Archivo Sheet (.xlsx) exportado con éxito.', 'success');
         }
 
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    let newUnits = [];
+                    json.forEach((row) => {
+                        if (row && row.length >= 2) {
+                            let codeVal = String(row[1] || '').trim();
+                            let nameVal = '';
+                            for (let c = 2; c < row.length; c++) {
+                                if (row[c] && String(row[c]).trim().length > 0) {
+                                    nameVal = String(row[c]).trim();
+                                    break;
+                                }
+                            }
+                            if (!nameVal && row[0]) nameVal = String(row[0]).trim();
+
+                            if (codeVal && nameVal && codeVal.toLowerCase() !== 'codigo' && codeVal.toLowerCase() !== 'código unidad') {
+                                newUnits.push({ code: codeVal, name: nameVal.toUpperCase() });
+                            }
+                        }
+                    });
+
+                    if (newUnits.length > 0) {
+                        officialUnits = newUnits;
+                        document.getElementById('excelStatusLabel').textContent = `Excel Cargado (${newUnits.length} un.)`;
+                        showToast(`Se cargaron ${newUnits.length} unidades correctamente desde el Excel`, 'success');
+                    } else {
+                        showToast('No se pudieron extraer datos válidos del Excel', 'warning');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error al leer el archivo Excel', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         function openModal(modalId) {
             if (modalId === 'ticketModal' && !document.getElementById('ticketId').value) {
                 document.getElementById('ticketForm').reset();
@@ -1316,6 +1342,7 @@
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
+            if (!container) return;
             const toast = document.createElement('div');
 
             let bg = 'bg-slate-900 text-white';
@@ -1339,7 +1366,7 @@
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>"']/g, function(m) {
+            return String(str).replace(/[&<>"']/g, function(m) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
         }
