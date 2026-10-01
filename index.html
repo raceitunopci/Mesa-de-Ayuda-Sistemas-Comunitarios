@@ -98,7 +98,7 @@
                         <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Total Atenciones</p>
                         <h3 id="statTotal" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
                         <p class="text-xs text-emerald-600 font-medium mt-1 flex items-center">
-                            <i class="fa-solid fa-arrow-trend-up mr-1"></i> Registradas en el sistema
+                            <i class="fa-solid fa-arrow-trend-up mr-1"></i> Sincronizadas en la nube
                         </p>
                     </div>
                     <div class="w-12 h-12 bg-emerald-50 text-[#004225] rounded-xl flex items-center justify-center text-xl font-bold">
@@ -194,7 +194,7 @@
                     <div class="flex items-center space-x-3 flex-wrap gap-2">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">Registro General de Atenciones</h2>
-                            <p class="text-xs text-slate-500">Gestiona, filtra y realiza seguimiento a las solicitudes recibidas</p>
+                            <p class="text-xs text-slate-500">Sincronizado en línea para todos los equipos</p>
                         </div>
                         <label class="inline-flex items-center px-3 py-1.5 border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 cursor-pointer transition-colors">
                             <i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i>
@@ -531,7 +531,7 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h3 class="text-base font-bold text-slate-900">¿Eliminar esta Atención?</h3>
-            <p class="text-xs text-slate-500 mt-1">Esta acción eliminará de forma permanente el registro del sistema.</p>
+            <p class="text-xs text-slate-500 mt-1">Esta acción eliminará de forma permanente el registro de la nube.</p>
             <div class="flex justify-center space-x-3 mt-6">
                 <button onclick="closeModal('deleteModal')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
                     Cancelar
@@ -547,7 +547,9 @@
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
-        // Official complete units list mapped from Excel (Column B as code, Column C or other text as name)
+        // URL DE TU GOOGLE APPS SCRIPT (Reemplazar con la URL webapp real cuando la crees)
+        const SCRIPT_URL = "PEGAR_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT";
+
         let officialUnits = [
             { code: "1001", name: "10A. COM. LA CISTERNA" },
             { code: "1002", name: "11A. COM. LO ESPEJO" },
@@ -650,7 +652,81 @@
             { code: "2005", name: "CENTRAL TELEFONICA MESA DE AYUDA" }
         ];
 
-        // Function to handle uploading Excel file (`COD-UNI_2.xlsx`) and mapping Column B as Unit Code
+        let tickets = [];
+        let filteredTickets = [];
+        let currentPage = 1;
+        const rowsPerPage = 6;
+        let sortColumn = 'id';
+        let sortAsc = false;
+        let ticketToDeleteId = null;
+
+        let channelChartInstance = null;
+        let typeChartInstance = null;
+
+        window.onload = function() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            initCharts();
+            loadTicketsFromCloud();
+
+            document.addEventListener('click', function(e) {
+                const container = document.getElementById('formUnitInput');
+                const dropdown = document.getElementById('unitDropdownList');
+                if (container && dropdown && !container.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        };
+
+        // Función para cargar los datos desde Google Sheets
+        function loadTicketsFromCloud() {
+            if (SCRIPT_URL === "PEGAR_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT") {
+                showToast('Falta configurar la SCRIPT_URL de Google Sheets', 'warning');
+                tickets = [];
+                applyFilters();
+                return;
+            }
+
+            showToast('Sincronizando con la nube...', 'info');
+            fetch(SCRIPT_URL + "?action=get")
+                .then(response => response.json())
+                .then(data => {
+                    tickets = data || [];
+                    applyFilters();
+                    showToast('Datos sincronizados correctamente', 'success');
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Error al conectar con la nube. Revise la URL.', 'error');
+                });
+        }
+
+        // Función para guardar o actualizar en Google Sheets
+        function sendToCloud(actionType, ticketData, callback) {
+            if (SCRIPT_URL === "PEGAR_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT") {
+                showToast('No se puede guardar: Falta configurar SCRIPT_URL', 'error');
+                return;
+            }
+
+            showToast('Guardando cambios en la nube...', 'info');
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: actionType, ticket: ticketData })
+            })
+            .then(() => {
+                setTimeout(() => {
+                    loadTicketsFromCloud();
+                    if (callback) callback();
+                }, 1000);
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Error al guardar en la nube', 'error');
+            });
+        }
+
         function handleExcelUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -665,9 +741,9 @@
                     const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                     let newUnits = [];
-                    json.forEach((row, idx) => {
+                    json.forEach((row) => {
                         if (row && row.length >= 2) {
-                            let codeVal = String(row[1] || '').trim(); // Column B
+                            let codeVal = String(row[1] || '').trim();
                             let nameVal = '';
                             for (let c = 2; c < row.length; c++) {
                                 if (row[c] && String(row[c]).trim().length > 0) {
@@ -692,125 +768,10 @@
                     }
                 } catch (err) {
                     console.error(err);
-                    showToast('Error al leer el archivo Excel. Verifique el formato.', 'error');
+                    showToast('Error al leer el archivo Excel.', 'error');
                 }
             };
             reader.readAsArrayBuffer(file);
-        }
-
-        // Default Dataset with realistic Chilean institution examples
-        const initialDataset = [
-            {
-                id: "ATN-1001",
-                funcCode: "FN-8421",
-                date: "2026-09-28 08:30",
-                channel: "Correo Electrónico Institucional",
-                unit: "1RA. COM. SANTIAGO",
-                unitCode: "1121",
-                userName: "Cap. Roberto Morales",
-                userRole: "Jefe de Operaciones",
-                contact: "rmorales@institucion.cl / Anexo 102",
-                type: "Cambio de usuario",
-                priority: "Media",
-                status: "Resuelto",
-                description: "Solicita cambio de perfil de usuario en el sistema informático por traslado de puesto de trabajo.",
-                solution: "Se actualizaron los permisos en la base de datos de usuarios y se notificó por correo."
-            },
-            {
-                id: "ATN-1002",
-                funcCode: "FN-3920",
-                date: "2026-09-28 09:15",
-                channel: "Teléfono IP",
-                unit: "DEPARTAMENTO DE FINANZAS",
-                unitCode: "2001",
-                userName: "Dra. Patricia Silva",
-                userRole: "Directora de Sección",
-                contact: "Anexo 4055",
-                type: "Caducado por Plazo",
-                priority: "Alta",
-                status: "En Proceso",
-                description: "Solicita prórroga de expediente que figura como caducado por plazo en el sistema.",
-                solution: "Soporte coordinando habilitación temporal de plazo."
-            },
-            {
-                id: "ATN-1003",
-                funcCode: "FN-1102",
-                date: "2026-09-28 09:40",
-                channel: "Celular / WhatsApp",
-                unit: "10A. COM. LA CISTERNA",
-                unitCode: "1001",
-                userName: "Sgto. Claudio Fuentes",
-                userRole: "Encargado de Turno",
-                contact: "+56 9 8765 4321",
-                type: "Validacion",
-                priority: "Crítica",
-                status: "Resuelto",
-                description: "Validación de registro digital de parte policial ingresado.",
-                solution: "Se validó y firmó electrónicamente el registro."
-            },
-            {
-                id: "ATN-1004",
-                funcCode: "FN-7734",
-                date: "2026-09-28 10:10",
-                channel: "Presencial",
-                unit: "DEPARTAMENTO DE RECURSOS HUMANOS",
-                unitCode: "2002",
-                userName: "María José Vargas",
-                userRole: "Analista Contable",
-                contact: "mjvargas@institucion.cl",
-                type: "Eliminar Problema",
-                priority: "Media",
-                status: "Pendiente",
-                description: "Solicita eliminar duplicidad de ticket de incidencia erróneo.",
-                solution: "En espera de validación."
-            },
-            {
-                id: "ATN-1005",
-                funcCode: "FN-5561",
-                date: "2026-09-28 10:45",
-                channel: "DOE",
-                unit: "DIRECCION DE EDUCACION YDOCTRINA (DOE)",
-                unitCode: "2003",
-                userName: "Subtcno. Hernán Castro",
-                userRole: "Comandante de Unidad",
-                contact: "DOE Nº 892/2026",
-                type: "Ayuda Remoto",
-                priority: "Alta",
-                status: "Derivado",
-                description: "Asistencia remota para configuración de firma digital institucional.",
-                solution: "Derivado al área de soporte remoto."
-            }
-        ];
-
-        let tickets = JSON.parse(localStorage.getItem('mesaAyudaTickets')) || initialDataset;
-        let filteredTickets = [...tickets];
-        let currentPage = 1;
-        const rowsPerPage = 6;
-        let sortColumn = 'id';
-        let sortAsc = false;
-        let ticketToDeleteId = null;
-
-        let channelChartInstance = null;
-        let typeChartInstance = null;
-
-        window.onload = function() {
-            saveToLocalStorage();
-            updateClock();
-            setInterval(updateClock, 1000);
-            initCharts();
-            applyFilters();
-
-            document.addEventListener('click', function(e) {
-                const container = document.getElementById('formUnitInput');
-                const dropdown = document.getElementById('unitDropdownList');
-                if (container && dropdown && !container.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-        };
-
-        function saveToLocalStorage() {
-            localStorage.setItem('mesaAyudaTickets', JSON.stringify(tickets));
         }
 
         function updateClock() {
@@ -905,8 +866,6 @@
                     }
                 }
             });
-
-            updateCharts();
         }
 
         function updateCharts() {
@@ -963,12 +922,12 @@
 
             filteredTickets = tickets.filter(t => {
                 const matchesSearch = 
-                    t.id.toLowerCase().includes(searchVal) ||
-                    t.funcCode.toLowerCase().includes(searchVal) ||
-                    t.unit.toLowerCase().includes(searchVal) ||
-                    (t.unitCode && t.unitCode.toLowerCase().includes(searchVal)) ||
-                    t.userName.toLowerCase().includes(searchVal) ||
-                    t.description.toLowerCase().includes(searchVal);
+                    String(t.id).toLowerCase().includes(searchVal) ||
+                    String(t.funcCode).toLowerCase().includes(searchVal) ||
+                    String(t.unit).toLowerCase().includes(searchVal) ||
+                    (t.unitCode && String(t.unitCode).toLowerCase().includes(searchVal)) ||
+                    String(t.userName).toLowerCase().includes(searchVal) ||
+                    String(t.description).toLowerCase().includes(searchVal);
 
                 const matchesChannel = !channelVal || t.channel === channelVal;
                 const matchesStatus = !statusVal || t.status === statusVal;
@@ -981,6 +940,7 @@
             currentPage = 1;
             sortData();
             renderTable();
+            updateCharts();
         }
 
         function resetFilters() {
@@ -1175,44 +1135,36 @@
                 }
             }
 
-            if (id) {
-                const idx = tickets.findIndex(t => t.id === id);
-                if (idx !== -1) {
-                    tickets[idx] = {
-                        ...tickets[idx],
-                        funcCode, channel, unit: unitName, unitCode, userName, userRole, contact, type, priority, status, description, solution
-                    };
-                    showToast(`Atención ${id} actualizada con éxito`, 'success');
-                }
-            } else {
-                const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(t.id.replace('ATN-', '')) || 1000)) + 1 : 1001;
-                const newId = `ATN-${nextNum}`;
-                const now = new Date();
-                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-                tickets.unshift({
-                    id: newId,
-                    funcCode,
-                    date: dateStr,
-                    channel, 
-                    unit: unitName, 
-                    unitCode, 
-                    userName, 
-                    userRole, 
-                    contact, 
-                    type, 
-                    priority, 
-                    status, 
-                    description, 
-                    solution: solution || 'En atención inicial.'
-                });
-                showToast(`Nueva atención ${newId} registrada correctamente`, 'success');
+            let ticketIdFinal = id;
+            if (!ticketIdFinal) {
+                const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(String(t.id).replace('ATN-', '')) || 1000)) + 1 : 1001;
+                ticketIdFinal = `ATN-${nextNum}`;
             }
 
-            saveToLocalStorage();
-            updateCharts();
-            applyFilters();
-            closeModal('ticketModal');
+            const ticketObj = {
+                id: ticketIdFinal,
+                funcCode,
+                date: dateStr,
+                channel, 
+                unit: unitName, 
+                unitCode, 
+                userName, 
+                userRole, 
+                contact, 
+                type, 
+                priority, 
+                status, 
+                description, 
+                solution: solution || 'En atención inicial.'
+            };
+
+            const action = id ? "update" : "create";
+            sendToCloud(action, ticketObj, () => {
+                closeModal('ticketModal');
+            });
         }
 
         function editTicket(id) {
@@ -1262,13 +1214,10 @@
             const confirmBtn = document.getElementById('confirmDeleteBtn');
             confirmBtn.onclick = function() {
                 if (ticketToDeleteId) {
-                    tickets = tickets.filter(t => t.id !== ticketToDeleteId);
-                    saveToLocalStorage();
-                    updateCharts();
-                    applyFilters();
-                    showToast(`Atención ${ticketToDeleteId} eliminada`, 'info');
-                    closeModal('deleteModal');
-                    ticketToDeleteId = null;
+                    sendToCloud("delete", { id: ticketToDeleteId }, () => {
+                        closeModal('deleteModal');
+                        ticketToDeleteId = null;
+                    });
                 }
             };
             openModal('deleteModal');
@@ -1280,7 +1229,6 @@
                 return;
             }
 
-            // Format data rows for Excel / Google Sheets
             const sheetData = filteredTickets.map(t => ({
                 "ID Atención": t.id,
                 "Código Funcionario": t.funcCode || '',
@@ -1298,22 +1246,19 @@
                 "Solución / Observaciones": t.solution || ''
             }));
 
-            // Create Worksheet and Workbook using SheetJS
             const worksheet = XLSX.utils.json_to_sheet(sheetData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Mesa de Ayuda");
 
-            // Auto-fit column widths for better visual presentation in Sheet
             const colWidths = Object.keys(sheetData[0]).map(key => ({
                 wch: Math.max(key.length, ...sheetData.map(row => String(row[key] || '').length)) + 3
             }));
             worksheet['!cols'] = colWidths;
 
-            // Trigger file download (.xlsx format compatible with Google Sheets & Microsoft Excel)
             const fileName = `Mesa_Ayuda_Sistemas_Comunitarios_${new Date().toISOString().slice(0,10)}.xlsx`;
             XLSX.writeFile(workbook, fileName);
 
-            showToast('Archivo Sheet (.xlsx) exportado con éxito. Listo para guardar en la nube.', 'success');
+            showToast('Archivo Sheet (.xlsx) exportado con éxito.', 'success');
         }
 
         function openModal(modalId) {
@@ -1359,7 +1304,7 @@
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/[&<>"']/g, function(m) {
+            return String(str).replace(/[&<>"']/g, function(m) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
         }
