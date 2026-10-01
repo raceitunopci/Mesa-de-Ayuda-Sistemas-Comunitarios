@@ -547,8 +547,8 @@
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
-        // URL DE TU GOOGLE APPS SCRIPT (Reemplazar con la URL webapp real cuando la crees)
-        const SCRIPT_URL = "PEGAR_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT";
+        // URL DE TU GOOGLE APPS SCRIPT CONFIGURADA
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzOYVLyuL1lDgURm1qsKTl-Z4IggR8W_P8zcF2oNLuAUnmhP3v2cDwMi6VgSx_3c7c6Ug/exec";
 
         let officialUnits = [
             { code: "1001", name: "10A. COM. LA CISTERNA" },
@@ -678,15 +678,7 @@
             });
         };
 
-        // Función para cargar los datos desde Google Sheets
         function loadTicketsFromCloud() {
-            if (SCRIPT_URL === "PEGAR_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT") {
-                showToast('Falta configurar la SCRIPT_URL de Google Sheets', 'warning');
-                tickets = [];
-                applyFilters();
-                return;
-            }
-
             showToast('Sincronizando con la nube...', 'info');
             fetch(SCRIPT_URL + "?action=get")
                 .then(response => response.json())
@@ -697,17 +689,11 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    showToast('Error al conectar con la nube. Revise la URL.', 'error');
+                    showToast('Error al conectar con la nube.', 'error');
                 });
         }
 
-        // Función para guardar o actualizar en Google Sheets
         function sendToCloud(actionType, ticketData, callback) {
-            if (SCRIPT_URL === "PEGAR_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT") {
-                showToast('No se puede guardar: Falta configurar SCRIPT_URL', 'error');
-                return;
-            }
-
             showToast('Guardando cambios en la nube...', 'info');
             fetch(SCRIPT_URL, {
                 method: 'POST',
