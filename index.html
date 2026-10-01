@@ -691,27 +691,27 @@
                     console.error(err);
                     showToast('Error al conectar con la nube.', 'error');
                 });
-        }
-
-        function sendToCloud(actionType, ticketData, callback) {
-            showToast('Guardando cambios en la nube...', 'info');
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: actionType, ticket: ticketData })
-            })
-            .then(() => {
-                setTimeout(() => {
-                    loadTicketsFromCloud();
-                    if (callback) callback();
-                }, 1000);
-            })
-            .catch(err => {
-                console.error(err);
-                showToast('Error al guardar en la nube', 'error');
-            });
-        }
-
+        }function sendToCloud(actionType, ticketData, callback) {
+    showToast('Guardando cambios en la nube...', 'info');
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        redirect: 'follow', // Permite las redirecciones internas de Google Apps Script
+        headers: { 
+            'Content-Type': 'text/plain;charset=utf-8' // Evita el bloqueo de CORS al hacer POST
+        },
+        body: JSON.stringify({ action: actionType, ticket: ticketData })
+    })
+    .then(() => {
+        setTimeout(() => {
+            loadTicketsFromCloud();
+            if (callback) callback();
+        }, 1000);
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Error al guardar en la nube', 'error');
+    });
+}
         function handleExcelUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
