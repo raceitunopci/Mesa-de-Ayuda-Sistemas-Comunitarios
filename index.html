@@ -697,7 +697,6 @@
             showToast('Guardando cambios en la nube...', 'info');
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: actionType, ticket: ticketData })
             })
