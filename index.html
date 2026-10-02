@@ -1081,77 +1081,102 @@
                 <span class="w-1.5 h-1.5 rounded-full ${dot} mr-1.5"></span> ${status}
             </span>`;
         }
+function saveTicket(e) {
+    e.preventDefault();
 
-        function saveTicket(e) {
-            e.preventDefault();
+    const id = document.getElementById('ticketId').value;
+    const funcCode = document.getElementById('formFuncCode').value.trim();
+    const channel = document.getElementById('formChannel').value;
+    const rawUnitInput = document.getElementById('formUnitInput').value.trim();
+    const userName = document.getElementById('formUserName').value.trim() || 'No especificado';
+    const userRole = document.getElementById('formUserRole').value.trim();
+    const contact = document.getElementById('formContact').value.trim() || 'No especificado';
+    const type = document.getElementById('formType').value;
+    const priority = document.getElementById('formPriority').value;
+    const status = document.getElementById('formStatus').value;
+    const description = document.getElementById('formDescription').value.trim();
+    const solution = document.getElementById('formSolution').value.trim();
 
-            const id = document.getElementById('ticketId').value;
-            const funcCode = document.getElementById('formFuncCode').value.trim();
-            const channel = document.getElementById('formChannel').value;
-            const rawUnitInput = document.getElementById('formUnitInput').value.trim();
-            const userName = document.getElementById('formUserName').value.trim() || 'No especificado';
-            const userRole = document.getElementById('formUserRole').value.trim();
-            const contact = document.getElementById('formContact').value.trim() || 'No especificado';
-            const type = document.getElementById('formType').value;
-            const priority = document.getElementById('formPriority').value;
-            const status = document.getElementById('formStatus').value;
-            const description = document.getElementById('formDescription').value.trim();
-            const solution = document.getElementById('formSolution').value.trim();
+    if (!rawUnitInput) {
+        showToast('Debe seleccionar o ingresar una unidad válida', 'warning');
+        return;
+    }
 
-            if (!rawUnitInput) {
-                showToast('Debe seleccionar o ingresar una unidad válida', 'warning');
-                return;
-            }
+    let unitCode = '';
+    let unitName = rawUnitInput;
 
-            let unitCode = '';
-            let unitName = rawUnitInput;
-
-            if (rawUnitInput.includes(' - ')) {
-                const parts = rawUnitInput.split(' - ');
-                unitCode = parts[0].trim();
-                unitName = parts.slice(1).join(' - ').trim();
-            } else {
-                const found = officialUnits.find(u => u.name.toLowerCase() === rawUnitInput.toLowerCase() || u.code === rawUnitInput);
-                if (found) {
-                    unitCode = found.code;
-                    unitName = found.name;
-                } else {
-                    unitCode = '2000';
-                }
-            }
-
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            let ticketIdFinal = id;
-            if (!ticketIdFinal) {
-                const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(String(t.id).replace('ATN-', '')) || 1000)) + 1 : 1001;
-                ticketIdFinal = `ATN-${nextNum}`;
-            }
-
-            const ticketObj = {
-                id: ticketIdFinal,
-                funcCode,
-                date: dateStr,
-                channel, 
-                unit: unitName, 
-                unitCode, 
-                userName, 
-                userRole, 
-                contact, 
-                type, 
-                priority, 
-                status, 
-                description, 
-                solution: solution || 'En atención inicial.'
-            };
-
-            const action = id ? "update" : "create";
-            sendToCloud(action, ticketObj, () => {
-                closeModal('ticketModal');
-            });
+    if (rawUnitInput.includes(' - ')) {
+        const parts = rawUnitInput.split(' - ');
+        unitCode = parts[0].trim();
+        unitName = parts.slice(1).join(' - ').trim();
+    } else {
+        const found = officialUnits.find(u => u.name.toLowerCase() === rawUnitInput.toLowerCase() || u.code === rawUnitInput);
+        if (found) {
+            unitCode = found.code;
+            unitName = found.name;
+        } else {
+            unitCode = '2000';
         }
+    }
 
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    let ticketIdFinal = id;
+    if (!ticketIdFinal) {
+        const nextNum = tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(String(t.id).replace('ATN-', '')) || 1000)) + 1 : 1001;
+        ticketIdFinal = `ATN-${nextNum}`;
+    }
+
+    const ticketObj = {
+        id: ticketIdFinal,
+        funcCode,
+        date: dateStr,
+        channel, 
+        unit: unitName, 
+        unitCode, 
+        userName, 
+        userRole, 
+        contact, 
+        type, 
+        priority, 
+        status, 
+        description, 
+        solution: solution || 'En atención inicial.'
+    };
+
+    const action = id ? "update" : "create";
+
+    // 1. ACTUALIZACIÓN INSTANTÁNEA LOCAL (Sin esperar a la nube)
+    if (id) {
+        const index = tickets.findIndex(t => t.id === id);
+        if (index !== -1) tickets[index] = ticketObj;
+    } else {
+        tickets.unshift(ticketObj); // Lo añade al inicio de la lista
+    }
+    
+    applyFilters(); // Refresca la tabla y gráficos de inmediato
+    closeModal('ticketModal');
+    showToast('Atención guardada correctamente', 'success');
+
+    // 2. SINCRONIZACIÓN EN SEGUNDO PLANO
+    sendToCloudBackground(action, ticketObj);
+}
+
+function sendToCloudBackground(actionType, ticketData) {
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 
+            'Content-Type': 'text/plain;charset=utf-8' 
+        },
+        body: JSON.stringify({ action: actionType, ticket: ticketData })
+    })
+    .catch(err => {
+        console.error("Error al sincronizar con la nube:", err);
+        showToast('Advertencia: El cambio está en pantalla pero hubo un problema de red con la nube.', 'warning');
+    });
+}
         function editTicket(id) {
             const ticket = tickets.find(t => t.id === id);
             if (!ticket) return;
